@@ -1,0 +1,395 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../app/generated/prisma"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+// ─── AUTH ───────────────────────────────────────────────────────────────────
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String    @unique
+  emailVerified DateTime?
+  image         String?
+  password      String?
+  createdAt     DateTime  @default(now())
+
+  accounts Account[]
+  sessions Session[]
+  games    Game[]
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+// ─── GAME ────────────────────────────────────────────────────────────────────
+
+// Faction: ENGLAND | FRANCE | SPAIN
+// Owner:   PLAYER | AI_RIVAL | AI_NEUTRAL
+
+model Game {
+  id        String   @id @default(cuid())
+  userId    String
+  faction   String   // ENGLAND | FRANCE | SPAIN
+  turn      Int      @default(0)
+  tick      Int      @default(0)
+  lastTick  DateTime @default(now())
+  mapWidth  Int      @default(20)
+  mapHeight Int      @default(20)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user      User      @relation(fields: [userId], references: [id])
+  tiles     Tile[]
+  villages  Village[]
+  armies    Army[]
+  camps     Camp[]
+  hero      Hero?
+  battles   Battle[]
+  spyReports SpyReport[]
+}
+
+// ─── MAP ─────────────────────────────────────────────────────────────────────
+
+// TileType: PLAIN | VILLAGE | OASIS_FOREST | OASIS_STONE | OASIS_IRON
+//           OASIS_GRAIN | DEPOSIT_SILVER | DEPOSIT_GOLD | CAMP | RUINS | RIVER | MOUNTAIN
+
+model Tile {
+  id       String  @id @default(cuid())
+  gameId   String
+  x        Int
+  y        Int
+  type     String  @default("PLAIN")
+  // visibility: HIDDEN | FOG | VISIBLE
+  visibility String @default("HIDDEN")
+  // terrain bonus (JSON string): e.g. {"wood":25} for forest oasis
+  bonus    String  @default("{}")
+
+  game     Game     @relation(fields: [gameId], references: [id], onDelete: Cascade)
+  village  Village?
+  camp     Camp?
+  armies   ArmyPosition[]
+
+  @@unique([gameId, x, y])
+}
+
+// ─── VILLAGE ─────────────────────────────────────────────────────────────────
+
+model Village {
+  id         String  @id @default(cuid())
+  gameId     String
+  tileId     String  @unique
+  name       String
+  owner      String  @default("AI_NEUTRAL") // PLAYER | AI_RIVAL | AI_NEUTRAL
+  faction    String? // ENGLAND | FRANCE | SPAIN
+  loyalty    Int     @default(100)
+  population Int     @default(50)
+  wallLevel  Int     @default(0)
+
+  // ── Stored resources ──
+  wood    Int @default(300)
+  stone   Int @default(300)
+  iron    Int @default(150)
+  grain   Int @default(400)
+  straw   Int @default(200)
+  adobe   Int @default(100)
+  silver  Int @default(0)
+  gold    Int @default(0)
+
+  // ── Production per tick (every ~5 min) ──
+  woodRate   Int @default(10)
+  stoneRate  Int @default(8)
+  ironRate   Int @default(6)
+  grainRate  Int @default(14) // also generates straw at 40% ratio
+  silverRate Int @default(0)
+  goldRate   Int @default(0)
+
+  // ── Storage limits ──
+  warehouseCap Int @default(1000)
+  granaryCap   Int @default(1000)
+
+  game      Game        @relation(fields: [gameId], references: [id], onDelete: Cascade)
+  tile      Tile        @relation(fields: [tileId], references: [id])
+  buildings Building[]
+  trainQueues TrainQueue[]
+  buildQueues BuildQueue[]
+
+  supplyLinesOut SupplyLine[] @relation("SupplySource")
+}
+
+// ─── BUILDINGS ───────────────────────────────────────────────────────────────
+
+// BuildingType:
+//   MAIN_HALL, WAREHOUSE, GRANARY, MARKET, FORGE,
+//   BARRACKS, STABLES, SIEGE_WORKSHOP, WATCHTOWER,
+//   TAVERN, CHAPEL, WALLS, RALLY_POINT, RESIDENCE
+
+model Building {
+  id        String  @id @default(cuid())
+  villageId String
+  type      String
+  level     Int     @default(1)
+
+  village   Village @relation(fields: [villageId], references: [id], onDelete: Cascade)
+}
+
+model BuildQueue {
+  id          String   @id @default(cuid())
+  villageId   String
+  buildingType String
+  targetLevel Int
+  endsAt      DateTime
+  position    Int      @default(0)
+
+  village     Village  @relation(fields: [villageId], references: [id], onDelete: Cascade)
+}
+
+// ─── ARMIES ──────────────────────────────────────────────────────────────────
+
+model Army {
+  id       String  @id @default(cuid())
+  gameId   String
+  name     String  @default("Ejército")
+  owner    String  // PLAYER | AI_RIVAL
+  faction  String  // ENGLAND | FRANCE | SPAIN
+
+  // Current position
+  tileId   String?
+
+  // Movement
+  isMoving    Boolean  @default(false)
+  targetTileId String?
+  departsAt   DateTime?
+  arrivesAt   DateTime?
+  pathJson    String   @default("[]") // JSON array of tile IDs
+
+  // Field supplies (carried)
+  carriedGrain Int @default(100)
+  carriedStraw Int @default(50)
+
+  // Stamina 0–100 (decreases marching, recovers resting)
+  stamina     Int     @default(100)
+  isResting   Boolean @default(false)
+
+  // Foraging
+  isForaging  Boolean @default(false)
+
+  // Supply line
+  supplyLineId String?
+
+  game        Game          @relation(fields: [gameId], references: [id], onDelete: Cascade)
+  troops      ArmyTroop[]
+  positions   ArmyPosition[]
+  supplyLine  SupplyLine?   @relation(fields: [supplyLineId], references: [id])
+  hero        Hero?
+  battles     BattleArmy[]
+}
+
+// TroopType (per faction):
+// ENGLAND: LEVY, WELSH_SPEARMAN, SERGEANT, CROSSBOWMAN, LONGBOWMAN,
+//          HOBELAR, MAN_AT_ARMS_ENG, KNIGHT_ENG, SCOUT_ENG, ENGINEER_ENG, TREBUCHET_ENG
+// FRANCE:  PIETAILLE, PIKEMAN, MOUNTED_SERGEANT, GENOESE_CROSSBOWMAN, FRANC_ARCHER,
+//          MAN_AT_ARMS_FRA, LIGHT_HORSEMAN_FRA, CHEVALIER, COURT_SPY, BOMBARD_BUREAU, SIEGE_ENGINEER_FRA
+// SPAIN:   PEON, ALMOGAVAR, BALLESTERO, PAVESERO, JINETE, MOUNTED_CROSSBOWMAN,
+//          MAN_AT_ARMS_SPA, KNIGHT_SANTIAGO, ALMOGAVAR_SPY, LOMBARD_SPA, CASTILIAN_SAILOR
+
+// Role: OFF | DEF | SPY | SIEGE | SPECIAL
+model ArmyTroop {
+  id      String @id @default(cuid())
+  armyId  String
+  type    String // TroopType
+  count   Int
+  faction String
+
+  army    Army   @relation(fields: [armyId], references: [id], onDelete: Cascade)
+}
+
+model TrainQueue {
+  id         String   @id @default(cuid())
+  villageId  String
+  troopType  String
+  faction    String
+  count      Int
+  endsAt     DateTime
+  position   Int      @default(0)
+
+  village    Village  @relation(fields: [villageId], references: [id], onDelete: Cascade)
+}
+
+// ArmyPosition tracks which armies are on which tile (many-to-many snapshot)
+model ArmyPosition {
+  id     String @id @default(cuid())
+  armyId String
+  tileId String
+
+  army   Army   @relation(fields: [armyId], references: [id], onDelete: Cascade)
+  tile   Tile   @relation(fields: [tileId], references: [id], onDelete: Cascade)
+
+  @@unique([armyId, tileId])
+}
+
+// ─── CAMP ────────────────────────────────────────────────────────────────────
+
+model Camp {
+  id      String @id @default(cuid())
+  gameId  String
+  tileId  String @unique
+  owner   String // PLAYER | AI_RIVAL
+  level   Int    @default(1)
+  name    String @default("Campamento")
+
+  // Stored supplies
+  grain   Int    @default(0)
+  straw   Int    @default(0)
+
+  // Stamina recovery bonus (% per tick)
+  restBonus Int  @default(20)
+
+  game    Game   @relation(fields: [gameId], references: [id], onDelete: Cascade)
+  tile    Tile   @relation(fields: [tileId], references: [id])
+}
+
+// ─── SUPPLY LINES ────────────────────────────────────────────────────────────
+
+model SupplyLine {
+  id         String  @id @default(cuid())
+  gameId     String
+  sourceId   String  // Village id
+  pathJson   String  @default("[]") // JSON: [tileId, ...]
+  isActive   Boolean @default(true)
+  isCut      Boolean @default(false)
+  wagons     Int     @default(0)
+  wagonGrain Int     @default(0)
+
+  source     Village  @relation("SupplySource", fields: [sourceId], references: [id])
+  armies     Army[]
+}
+
+// ─── HERO ────────────────────────────────────────────────────────────────────
+
+// Slot: HELMET | ARMOR | WEAPON | SHIELD | HORSE | BOOTS
+// ItemType: (see game/constants/items.ts)
+
+model Hero {
+  id      String @id @default(cuid())
+  gameId  String @unique
+  armyId  String? @unique
+  name    String
+  faction String // ENGLAND | FRANCE | SPAIN
+
+  level   Int @default(1)
+  xp      Int @default(0)
+  xpNext  Int @default(100)
+  hp      Int @default(100)
+  maxHp   Int @default(100)
+
+  // Distributable attribute points
+  fightingStrength Int @default(40)
+  attackBonus      Int @default(0)  // % bonus to army attack
+  defenseBonus     Int @default(0)  // % bonus to army defense
+  resourceBonus    Int @default(0)  // % bonus to village production
+
+  skillPoints Int @default(0)
+
+  // Status
+  isAlive       Boolean  @default(true)
+  revivesAt     DateTime?
+  isOnAdventure Boolean  @default(false)
+  adventureEndsAt DateTime?
+  adventureTileId String?
+
+  // Tile when not in army
+  tileId        String?
+
+  game      Game             @relation(fields: [gameId], references: [id], onDelete: Cascade)
+  army      Army?            @relation(fields: [armyId], references: [id])
+  equipment HeroEquipment[]
+}
+
+model HeroEquipment {
+  id     String @id @default(cuid())
+  heroId String
+  slot   String // HELMET | ARMOR | WEAPON | SHIELD | HORSE | BOOTS
+  item   String // item key from constants
+  tier   Int    @default(1)
+  // Bonus JSON e.g. {"attackBonus":10}
+  bonusJson String @default("{}")
+
+  hero   Hero   @relation(fields: [heroId], references: [id], onDelete: Cascade)
+
+  @@unique([heroId, slot])
+}
+
+// ─── COMBAT ──────────────────────────────────────────────────────────────────
+
+model Battle {
+  id         String   @id @default(cuid())
+  gameId     String
+  tileId     String
+  attackerId String
+  defenderId String?
+  resultJson String   @default("{}") // full battle report
+  type       String   @default("ATTACK") // ATTACK | RAID | SPY
+  createdAt  DateTime @default(now())
+
+  game     Game         @relation(fields: [gameId], references: [id], onDelete: Cascade)
+  armies   BattleArmy[]
+}
+
+model BattleArmy {
+  id       String @id @default(cuid())
+  battleId String
+  armyId   String
+  side     String // ATTACKER | DEFENDER
+
+  battle   Battle @relation(fields: [battleId], references: [id], onDelete: Cascade)
+  army     Army   @relation(fields: [armyId], references: [id])
+}
+
+model SpyReport {
+  id         String   @id @default(cuid())
+  gameId     String
+  tileId     String
+  reportJson String   @default("{}")
+  success    Boolean  @default(false)
+  createdAt  DateTime @default(now())
+
+  game       Game     @relation(fields: [gameId], references: [id], onDelete: Cascade)
+}
