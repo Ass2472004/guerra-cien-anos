@@ -1,19 +1,21 @@
 import { NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
 import { processTick } from "@/lib/game/engine/resources";
 import { updateSupplyLines, processForaging, processArmyMovement } from "@/lib/game/engine/supply";
 import { processNeutralAI, processRivalAI } from "@/lib/game/engine/ai";
 import { prisma } from "@/lib/db";
 
 export async function POST(_req: Request, { params }: { params: Promise<{ id: string }> }) {
-  const session = await auth();
-  if (!session?.user?.id) return NextResponse.json({ error: "No autenticado" }, { status: 401 });
+  const session = await getServerSession(authOptions);
+  if (!session?.user) return NextResponse.json({ error: "No autenticado" }, { status: 401 });
 
   const { id } = await params;
-  const game = await prisma.game.findUnique({ where: { id, userId: session.user.id } });
+  const userId = (session.user as any).id;
+
+  const game = await prisma.game.findUnique({ where: { id, userId } });
   if (!game) return NextResponse.json({ error: "Partida no encontrada" }, { status: 404 });
 
-  // Sequential tick processing
   await processArmyMovement(id);
   await processTick(id);
   await processForaging(id);
