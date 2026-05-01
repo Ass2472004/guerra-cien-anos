@@ -15,54 +15,43 @@ export default function RegisterPage() {
     e.preventDefault();
     setLoading(true); setError("");
     const res = await fetch("/api/register", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
+      method: "POST", headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ name, email, password }),
     });
     setLoading(false);
-    if (!res.ok) { const d = await res.json(); setError(d.error ?? "Error al registrar"); return; }
+    if (!res.ok) { const d = await res.json().catch(() => ({})); setError(d.error ?? "Error al registrar"); return; }
     router.push("/login");
   }
 
   return (
-    <main className="min-h-screen flex items-center justify-center bg-stone-950 px-4">
-      <div className="w-full max-w-sm bg-stone-900 rounded-xl p-8 border border-stone-800 space-y-6">
-        <h1 className="text-2xl font-bold text-amber-400 text-center">Crear cuenta</h1>
+    <main className="min-h-screen flex items-center justify-center px-4 py-12">
+      <div className="parchment w-full max-w-sm p-8 space-y-6">
+        <div className="text-center space-y-2">
+          <div className="text-4xl">📜</div>
+          <h1 className="font-display text-2xl text-ink">Crear crónica</h1>
+          <p className="text-ink-soft text-sm italic">Que el cronista anote tu nombre</p>
+        </div>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-sm text-stone-400 mb-1">Nombre</label>
-            <input
-              type="text" value={name} onChange={e => setName(e.target.value)}
-              className="w-full bg-stone-800 border border-stone-700 rounded px-3 py-2 text-stone-100 focus:outline-none focus:border-amber-500"
-            />
+            <label className="block text-sm text-ink-soft mb-1 font-display">Nombre del noble</label>
+            <input type="text" value={name} onChange={e => setName(e.target.value)} className="w-full" />
           </div>
           <div>
-            <label className="block text-sm text-stone-400 mb-1">Email</label>
-            <input
-              type="email" value={email} onChange={e => setEmail(e.target.value)}
-              className="w-full bg-stone-800 border border-stone-700 rounded px-3 py-2 text-stone-100 focus:outline-none focus:border-amber-500"
-              required
-            />
+            <label className="block text-sm text-ink-soft mb-1 font-display">Correo</label>
+            <input type="email" value={email} onChange={e => setEmail(e.target.value)} className="w-full" required />
           </div>
           <div>
-            <label className="block text-sm text-stone-400 mb-1">Contraseña</label>
-            <input
-              type="password" value={password} onChange={e => setPassword(e.target.value)}
-              className="w-full bg-stone-800 border border-stone-700 rounded px-3 py-2 text-stone-100 focus:outline-none focus:border-amber-500"
-              required minLength={6}
-            />
+            <label className="block text-sm text-ink-soft mb-1 font-display">Contraseña</label>
+            <input type="password" value={password} onChange={e => setPassword(e.target.value)} className="w-full" required minLength={6} />
           </div>
-          {error && <p className="text-red-400 text-sm">{error}</p>}
-          <button
-            type="submit" disabled={loading}
-            className="w-full py-2 rounded bg-amber-600 hover:bg-amber-500 font-semibold disabled:opacity-50 transition-colors"
-          >
-            {loading ? "Creando…" : "Crear cuenta"}
+          {error && <p className="text-blood text-sm italic">{error}</p>}
+          <button type="submit" disabled={loading} className="btn-medieval w-full">
+            {loading ? "Forjando…" : "📜 Sellar el pergamino"}
           </button>
         </form>
-        <p className="text-stone-500 text-sm text-center">
-          ¿Ya tienes cuenta?{" "}
-          <Link href="/login" className="text-amber-400 hover:underline">Inicia sesión</Link>
+        <p className="text-ink-soft text-sm text-center">
+          ¿Ya tienes crónica?{" "}
+          <Link href="/login" className="underline text-blood font-semibold">Acceder</Link>
         </p>
       </div>
     </main>

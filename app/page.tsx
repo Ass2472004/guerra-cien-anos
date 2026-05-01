@@ -2,28 +2,31 @@ import Link from "next/link";
 
 export default function Home() {
   return (
-    <main className="min-h-screen flex flex-col items-center justify-center bg-stone-950 text-stone-100 px-4">
-      <div className="max-w-2xl text-center space-y-6">
-        <h1 className="text-5xl font-bold tracking-tight text-amber-400">
+    <main className="min-h-screen flex flex-col items-center justify-center px-4 py-8 relative overflow-hidden">
+      <div
+        className="absolute inset-0 opacity-30 bg-cover bg-center pointer-events-none"
+        style={{ backgroundImage: "url('/banner.png')" }}
+      />
+      <div className="absolute inset-0 bg-gradient-to-b from-stone-950/60 via-stone-950/40 to-stone-950 pointer-events-none" />
+      <div className="relative max-w-2xl text-center space-y-7">
+        <div className="text-6xl">⚜</div>
+        <h1 className="font-display text-5xl md:text-6xl title-gold leading-tight">
           Guerra de los Cien Años
         </h1>
-        <p className="text-stone-400 text-lg">
-          Elige tu facción. Construye tu aldea. Comanda tus ejércitos.<br />
-          España, Francia e Inglaterra se disputan el control de Europa.
+        <div className="border-t border-b border-bronze py-4 mx-auto max-w-md">
+          <p className="text-parchment-aged text-lg italic">
+            «Que tu acero sea fiel,<br />
+            tu fe inquebrantable,<br />
+            y tu corona, eterna.»
+          </p>
+        </div>
+        <p className="text-parchment-dark text-lg">
+          Elige tu reino entre Inglaterra, Francia y España.<br />
+          Forja tu ejército. Conquista Europa.
         </p>
-        <div className="flex gap-4 justify-center mt-8">
-          <Link
-            href="/login"
-            className="px-8 py-3 rounded bg-amber-600 hover:bg-amber-500 font-semibold transition-colors"
-          >
-            Iniciar sesión
-          </Link>
-          <Link
-            href="/register"
-            className="px-8 py-3 rounded border border-stone-600 hover:border-amber-500 hover:text-amber-400 font-semibold transition-colors"
-          >
-            Registrarse
-          </Link>
+        <div className="flex gap-4 justify-center mt-8 flex-wrap">
+          <Link href="/login" className="btn-medieval">⚔ Entrar al campamento</Link>
+          <Link href="/register" className="btn-blood">📜 Forjar nueva crónica</Link>
         </div>
       </div>
     </main>

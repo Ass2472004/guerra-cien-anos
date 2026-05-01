@@ -13,8 +13,8 @@ export async function processTick(gameId: string) {
   });
 
   const now = new Date();
-  const minutesSinceLastTick = (now.getTime() - game.lastTick.getTime()) / 60000;
-  if (minutesSinceLastTick < 1) return; // throttle: max 1 tick per minute
+  const secondsSinceLastTick = (now.getTime() - game.lastTick.getTime()) / 1000;
+  if (secondsSinceLastTick < 5) return; // throttle: 5 second min
 
   const updates: Promise<unknown>[] = [];
 

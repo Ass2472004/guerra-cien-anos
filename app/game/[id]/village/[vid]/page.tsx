@@ -40,71 +40,71 @@ export default function VillagePage({ params }: { params: Promise<{ id: string; 
     if (res.ok) setData(await res.json());
   }
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => { load(); const t = setInterval(load, 8000); return () => clearInterval(t); }, []);
 
   async function doAction(action: string, payload: object) {
     const res = await fetch(`/api/game/${id}/village/${vid}`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
+      method: "POST", headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ action, payload }),
     });
-    const d = await res.json();
+    const d = await res.json().catch(() => ({}));
     setMsg(d.error ?? d.message ?? (d.ok ? "Hecho." : "Error"));
     if (d.ok) load();
-    setTimeout(() => setMsg(""), 3000);
+    setTimeout(() => setMsg(""), 3500);
   }
 
-  if (!data) return <div className="min-h-screen flex items-center justify-center bg-stone-950 text-amber-400">Cargando aldea…</div>;
+  if (!data) return <div className="min-h-screen flex items-center justify-center title-gold font-display text-2xl">Cargando aldea…</div>;
   const { village, armies } = data;
   const faction = (village.faction ?? "ENGLAND") as Faction;
 
-  const res = { wood: village.wood, stone: village.stone, iron: village.iron, grain: village.grain, straw: village.straw, adobe: village.adobe, silver: village.silver };
+  const res = { wood: village.wood, stone: village.stone, iron: village.iron, grain: village.grain, straw: village.straw, adobe: village.adobe, silver: village.silver, gold: village.gold };
 
   return (
-    <div className="min-h-screen bg-stone-950 text-stone-100">
-      {/* Header */}
-      <header className="bg-stone-900 border-b border-stone-800 px-4 py-3 flex items-center justify-between">
+    <div className="min-h-screen">
+      <header className="banner px-4 py-3 flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <Link href={`/game/${id}`} className="text-stone-400 hover:text-amber-400 transition-colors">← Mapa</Link>
-          <h1 className="font-bold text-amber-400 text-lg">{village.name}</h1>
-          <span className="text-xs text-stone-500">{faction}</span>
+          <Link href={`/game/${id}`} className="text-parchment-aged hover:text-gold-bright text-sm italic">← Volver al mapa</Link>
+          <span className="text-2xl">🏰</span>
+          <h1 className="font-display text-xl title-gold">{village.name}</h1>
+          <span className="text-xs text-parchment-aged italic">{faction}</span>
         </div>
-        {msg && <p className="text-sm text-amber-400">{msg}</p>}
+        {msg && <p className="text-sm text-gold-bright italic">{msg}</p>}
       </header>
 
-      {/* Resource bar */}
-      <div className="bg-stone-900 border-b border-stone-800 px-4 py-2 flex flex-wrap gap-4 text-sm">
+      <div className="bg-[#241710] border-b-2 border-bronze px-4 py-2 flex flex-wrap gap-4 text-sm">
         {([
-          { key: "wood",   label: "Madera",   rate: village.woodRate,  cap: village.warehouseCap, color: "text-green-400" },
-          { key: "stone",  label: "Piedra",   rate: village.stoneRate, cap: village.warehouseCap, color: "text-slate-400" },
-          { key: "iron",   label: "Hierro",   rate: village.ironRate,  cap: village.warehouseCap, color: "text-orange-400" },
-          { key: "grain",  label: "Grano",    rate: village.grainRate, cap: village.granaryCap,   color: "text-yellow-400" },
-          { key: "straw",  label: "Paja",     rate: Math.floor(village.grainRate * 0.4), cap: village.granaryCap, color: "text-amber-300" },
-          { key: "adobe",  label: "Adobe",    rate: 0, cap: village.warehouseCap, color: "text-red-300" },
-          { key: "silver", label: "Plata",    rate: 0, cap: village.warehouseCap, color: "text-sky-300" },
+          { key: "wood",   label: "Madera",  rate: village.woodRate,  color: "text-emerald-400", icon: "🌲" },
+          { key: "stone",  label: "Piedra",  rate: village.stoneRate, color: "text-stone-300",   icon: "⛏" },
+          { key: "iron",   label: "Hierro",  rate: village.ironRate,  color: "text-orange-400",  icon: "⚒" },
+          { key: "grain",  label: "Grano",   rate: village.grainRate, color: "text-yellow-400",  icon: "🌾" },
+          { key: "straw",  label: "Paja",    rate: Math.floor(village.grainRate * 0.4), color: "text-amber-300", icon: "🪶" },
+          { key: "adobe",  label: "Adobe",   rate: 0, color: "text-red-300",  icon: "🧱" },
+          { key: "silver", label: "Plata",   rate: 0, color: "text-sky-300",  icon: "🪙" },
+          { key: "gold",   label: "Oro",     rate: 0, color: "text-gold-bright", icon: "💰" },
         ] as const).map(r => (
-          <div key={r.key} className={`${r.color} flex flex-col items-center`}>
-            <span className="font-semibold">{res[r.key as keyof typeof res]}</span>
-            <span className="text-xs text-stone-500">{r.label} {r.rate > 0 ? `+${r.rate}/t` : ""}</span>
+          <div key={r.key} className="flex items-center gap-1.5">
+            <span>{r.icon}</span>
+            <div>
+              <div className={`font-bold font-display ${r.color}`}>{res[r.key as keyof typeof res]}</div>
+              <div className="text-xs text-parchment-dark">{r.label} {r.rate > 0 ? `+${r.rate}` : ""}</div>
+            </div>
           </div>
         ))}
       </div>
 
-      {/* Tabs */}
-      <div className="border-b border-stone-800 flex">
+      <div className="border-b-2 border-bronze flex">
         {(["RESOURCES","BUILDINGS","BARRACKS","ARMIES"] as Tab[]).map(t => (
           <button
             key={t}
             onClick={() => setTab(t)}
-            className={`px-5 py-2 text-sm font-medium transition-colors ${tab === t ? "text-amber-400 border-b-2 border-amber-400" : "text-stone-400 hover:text-stone-200"}`}
+            className={`px-6 py-2 text-sm font-display uppercase tracking-wider transition-colors ${tab === t ? "text-gold-bright border-b-4 border-gold bg-[#2c1d10]" : "text-parchment-aged hover:text-parchment"}`}
           >
-            {t === "RESOURCES" ? "Recursos" : t === "BUILDINGS" ? "Edificios" : t === "BARRACKS" ? "Cuartel" : "Ejércitos"}
+            {t === "RESOURCES" ? "📜 Recursos" : t === "BUILDINGS" ? "🏗 Edificios" : t === "BARRACKS" ? "⚔ Cuartel" : "🛡 Huestes"}
           </button>
         ))}
       </div>
 
-      <div className="p-4 max-w-4xl mx-auto">
-        {/* BUILDINGS TAB */}
+      <div className="p-4 max-w-5xl mx-auto">
         {tab === "BUILDINGS" && (
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             {Object.values(BUILDINGS).map(def => {
@@ -118,36 +118,32 @@ export default function VillagePage({ params }: { params: Promise<{ id: string; 
                 : false;
 
               return (
-                <div key={def.key} className="bg-stone-900 rounded-lg p-4 border border-stone-800 space-y-2">
+                <div key={def.key} className="parchment p-4 space-y-2">
                   <div className="flex items-center justify-between">
                     <div>
-                      <h3 className="font-semibold text-stone-100">{def.name}</h3>
-                      <p className="text-xs text-stone-500">Nivel {level}/{def.maxLevel}</p>
+                      <h3 className="font-display text-ink text-base">{def.name}</h3>
+                      <p className="text-xs text-ink-soft italic">Nivel {level}/{def.maxLevel}</p>
                     </div>
                     {level < def.maxLevel && !inQueue && (
-                      <button
-                        onClick={() => doAction("BUILD", { buildingType: def.key })}
-                        disabled={!canAfford}
-                        className="px-3 py-1 text-xs rounded bg-amber-700 hover:bg-amber-600 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-                      >
+                      <button onClick={() => doAction("BUILD", { buildingType: def.key })} disabled={!canAfford} className="btn-medieval text-xs">
                         Construir
                       </button>
                     )}
                     {inQueue && (
-                      <span className="text-xs text-amber-400">{timeLeft(inQueue.endsAt)}</span>
+                      <span className="text-xs text-blood font-display">{timeLeft(inQueue.endsAt)}</span>
                     )}
                   </div>
-                  <p className="text-xs text-stone-400">{def.description}</p>
+                  <p className="text-xs text-ink-soft italic">{def.description}</p>
                   {lvlDef && (
-                    <p className="text-xs text-stone-500">
-                      Coste: {[
-                        lvlDef.cost.adobe  > 0 && `${lvlDef.cost.adobe} Adobe`,
-                        lvlDef.cost.wood   > 0 && `${lvlDef.cost.wood} Madera`,
-                        lvlDef.cost.stone  > 0 && `${lvlDef.cost.stone} Piedra`,
-                        lvlDef.cost.iron   > 0 && `${lvlDef.cost.iron} Hierro`,
-                        lvlDef.cost.silver > 0 && `${lvlDef.cost.silver} Plata`,
+                    <p className="text-xs text-ink-soft">
+                      {[
+                        lvlDef.cost.adobe > 0 && `🧱 ${lvlDef.cost.adobe}`,
+                        lvlDef.cost.wood > 0 && `🌲 ${lvlDef.cost.wood}`,
+                        lvlDef.cost.stone > 0 && `⛏ ${lvlDef.cost.stone}`,
+                        lvlDef.cost.iron > 0 && `⚒ ${lvlDef.cost.iron}`,
+                        lvlDef.cost.silver > 0 && `🪙 ${lvlDef.cost.silver}`,
                       ].filter(Boolean).join(" · ")}
-                      {" · "}{Math.floor(lvlDef.time / 60)}m
+                      {" · ⏳ "}{Math.floor(lvlDef.time / 60)}m
                     </p>
                   )}
                 </div>
@@ -156,68 +152,70 @@ export default function VillagePage({ params }: { params: Promise<{ id: string; 
           </div>
         )}
 
-        {/* BARRACKS TAB */}
         {tab === "BARRACKS" && (
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             {TROOPS_BY_FACTION[faction].map(key => {
               const troop = TROOPS[key];
               if (!troop) return null;
-              const roleColor = { OFF: "text-red-400", DEF: "text-blue-400", SPY: "text-purple-400", SIEGE: "text-orange-400", SPECIAL: "text-amber-400" }[troop.role];
+              const roleColor = { OFF: "text-blood-bright", DEF: "text-royal-blue", SPY: "text-purple-700", SIEGE: "text-orange-700", SPECIAL: "text-gold" }[troop.role];
               return (
-                <div key={key} className="bg-stone-900 rounded-lg p-4 border border-stone-800 space-y-2">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <h3 className="font-semibold text-stone-100">{troop.name}</h3>
-                      <span className={`text-xs font-medium ${roleColor}`}>{troop.role}</span>
+                <div key={key} className="parchment p-3 flex gap-3 items-start">
+                  <img
+                    src={`/troops/${key}.png`}
+                    alt={troop.name}
+                    onError={e => { (e.target as HTMLImageElement).style.display = "none"; }}
+                    className="w-24 h-24 object-cover rounded-sm border-2 border-bronze flex-shrink-0"
+                  />
+                  <div className="flex-1 space-y-1">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <h3 className="font-display text-ink leading-tight">{troop.name}</h3>
+                        <span className={`text-xs font-bold uppercase tracking-wider ${roleColor}`}>{troop.role}</span>
+                      </div>
+                      <button onClick={() => doAction("TRAIN", { troopType: key, count: 10 })} className="btn-medieval text-xs">
+                        +10
+                      </button>
                     </div>
-                    <button
-                      onClick={() => doAction("TRAIN", { troopType: key, count: 10 })}
-                      className="px-3 py-1 text-xs rounded bg-stone-700 hover:bg-stone-600 transition-colors"
-                    >
-                      +10
-                    </button>
+                    <p className="text-xs text-ink-soft italic">{troop.description}</p>
+                    <div className="flex gap-3 text-xs text-ink-soft font-display">
+                      <span>⚔ {troop.attack}</span>
+                      <span>🛡 {troop.defense}</span>
+                      <span>💨 {troop.speed}</span>
+                      <span>🌾 {troop.grainCost}</span>
+                    </div>
+                    <p className="text-xs text-ink-soft">
+                      {Object.entries(troop.cost).filter(([, v]) => v > 0).map(([k, v]) => `${v} ${k}`).join(" · ")}
+                    </p>
                   </div>
-                  <p className="text-xs text-stone-400">{troop.description}</p>
-                  <div className="flex gap-3 text-xs text-stone-500">
-                    <span>⚔ {troop.attack}</span>
-                    <span>🛡 {troop.defense}</span>
-                    <span>💨 {troop.speed}</span>
-                    <span>🌾 {troop.grainCost}/t</span>
-                  </div>
-                  <p className="text-xs text-stone-600">
-                    {Object.entries(troop.cost).filter(([,v]) => v > 0).map(([k,v]) => `${v} ${k}`).join(" · ")}
-                  </p>
                 </div>
               );
             })}
           </div>
         )}
 
-        {/* ARMIES TAB */}
         {tab === "ARMIES" && (
           <div className="space-y-3">
-            {armies.length === 0 && <p className="text-stone-500">No hay ejércitos en esta aldea.</p>}
+            {armies.length === 0 && <p className="text-parchment-aged italic text-center py-8">No hay huestes en esta aldea.</p>}
             {armies.map(army => (
-              <div key={army.id} className="bg-stone-900 rounded-lg p-4 border border-stone-800 space-y-3">
+              <div key={army.id} className="parchment-dark p-4 space-y-3">
                 <div className="flex items-center justify-between">
-                  <span className={`text-sm font-semibold ${army.owner === "PLAYER" ? "text-amber-400" : "text-red-400"}`}>
-                    {army.owner === "PLAYER" ? "Tu ejército" : "Ejército rival"}
+                  <span className={`font-display ${army.owner === "PLAYER" ? "text-gold-bright" : "text-blood-bright"}`}>
+                    {army.owner === "PLAYER" ? "⚔ Tu hueste" : "☠ Hueste enemiga"}
                   </span>
-                  <div className="flex items-center gap-2 text-xs text-stone-400">
-                    <span>Stamina: {army.stamina}%</span>
-                    {army.isMoving   && <span className="text-blue-400">En marcha</span>}
-                    {army.isResting  && <span className="text-green-400">Descansando</span>}
-                    {army.isForaging && <span className="text-yellow-400">Forrajeando</span>}
+                  <div className="flex items-center gap-3 text-xs text-parchment-aged">
+                    <span>Stamina {army.stamina}%</span>
+                    {army.isMoving && <span className="text-blue-300">En marcha</span>}
+                    {army.isResting && <span className="text-emerald-300">Descansando</span>}
+                    {army.isForaging && <span className="text-yellow-300">Forrajeando</span>}
                   </div>
                 </div>
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                   {army.troops.map(t => {
                     const def = TROOPS[t.type];
-                    const roleColor = { OFF: "text-red-300", DEF: "text-blue-300", SPY: "text-purple-300", SIEGE: "text-orange-300", SPECIAL: "text-amber-300" }[def?.role ?? "OFF"];
                     return (
-                      <div key={t.type} className="bg-stone-800 rounded p-2 text-xs">
-                        <p className="font-medium text-stone-200">{def?.name ?? t.type}</p>
-                        <p className={`${roleColor}`}>{t.count} unidades</p>
+                      <div key={t.type} className="stat-box text-xs">
+                        <p className="font-display text-parchment">{def?.name ?? t.type}</p>
+                        <p className="text-gold-pale">{t.count} unidades</p>
                       </div>
                     );
                   })}
@@ -227,36 +225,38 @@ export default function VillagePage({ params }: { params: Promise<{ id: string; 
           </div>
         )}
 
-        {/* RESOURCES TAB */}
         {tab === "RESOURCES" && (
           <div className="space-y-4">
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
               {[
-                { label: "Madera", value: village.wood, rate: village.woodRate, cap: village.warehouseCap, color: "text-green-400" },
-                { label: "Piedra", value: village.stone, rate: village.stoneRate, cap: village.warehouseCap, color: "text-slate-400" },
-                { label: "Hierro", value: village.iron, rate: village.ironRate, cap: village.warehouseCap, color: "text-orange-400" },
-                { label: "Grano", value: village.grain, rate: village.grainRate, cap: village.granaryCap, color: "text-yellow-400" },
-                { label: "Paja", value: village.straw, rate: Math.floor(village.grainRate * 0.4), cap: village.granaryCap, color: "text-amber-300" },
-                { label: "Adobe", value: village.adobe, rate: 0, cap: village.warehouseCap, color: "text-red-300" },
-                { label: "Plata", value: village.silver, rate: 0, cap: village.warehouseCap, color: "text-sky-300" },
-                { label: "Oro", value: village.gold, rate: 0, cap: village.warehouseCap, color: "text-yellow-500" },
+                { label: "Madera", icon: "🌲", value: village.wood, rate: village.woodRate, cap: village.warehouseCap },
+                { label: "Piedra", icon: "⛏", value: village.stone, rate: village.stoneRate, cap: village.warehouseCap },
+                { label: "Hierro", icon: "⚒", value: village.iron, rate: village.ironRate, cap: village.warehouseCap },
+                { label: "Grano", icon: "🌾", value: village.grain, rate: village.grainRate, cap: village.granaryCap },
+                { label: "Paja", icon: "🪶", value: village.straw, rate: Math.floor(village.grainRate * 0.4), cap: village.granaryCap },
+                { label: "Adobe", icon: "🧱", value: village.adobe, rate: 0, cap: village.warehouseCap },
+                { label: "Plata", icon: "🪙", value: village.silver, rate: 0, cap: village.warehouseCap },
+                { label: "Oro", icon: "💰", value: village.gold, rate: 0, cap: village.warehouseCap },
               ].map(r => (
-                <div key={r.label} className="bg-stone-900 rounded-lg p-4 border border-stone-800">
-                  <p className={`text-2xl font-bold ${r.color}`}>{r.value}</p>
-                  <p className="text-sm text-stone-400">{r.label}</p>
-                  <div className="w-full bg-stone-700 rounded-full h-1 mt-2">
-                    <div className={`h-1 rounded-full bg-current ${r.color}`} style={{ width: `${Math.min(100, (r.value / r.cap) * 100)}%` }} />
+                <div key={r.label} className="parchment p-4">
+                  <div className="flex items-center gap-2">
+                    <span className="text-2xl">{r.icon}</span>
+                    <p className="text-3xl font-bold font-display text-ink">{r.value}</p>
                   </div>
-                  <p className="text-xs text-stone-500 mt-1">{r.value}/{r.cap} {r.rate > 0 ? `(+${r.rate}/t)` : ""}</p>
+                  <p className="text-sm text-ink-soft mt-1">{r.label}</p>
+                  <div className="w-full bg-stone-300 rounded-full h-1 mt-2">
+                    <div className="h-1 rounded-full bg-bronze" style={{ width: `${Math.min(100, (r.value / r.cap) * 100)}%` }} />
+                  </div>
+                  <p className="text-xs text-ink-soft mt-1">{r.value}/{r.cap} {r.rate > 0 ? `(+${r.rate})` : ""}</p>
                 </div>
               ))}
             </div>
-            <div className="bg-stone-900 rounded-lg p-4 border border-stone-800 text-sm space-y-1">
-              <h3 className="text-amber-400 font-semibold">Sistema de recursos</h3>
-              <p className="text-stone-400">Los campos de grano producen <span className="text-amber-300">Paja</span> automáticamente (40% del ratio de grano).</p>
-              <p className="text-stone-400">La <span className="text-red-300">Paja</span> se convierte lentamente en <span className="text-red-300">Adobe</span> (material básico de construcción).</p>
-              <p className="text-stone-400"><span className="text-green-400">Madera</span> + <span className="text-slate-400">Piedra</span> → construcciones avanzadas.</p>
-              <p className="text-stone-400"><span className="text-sky-300">Plata</span> y <span className="text-yellow-500">Oro</span> → comercio y diplomacia.</p>
+            <div className="parchment p-4 space-y-1 text-sm">
+              <h3 className="font-display text-ink">📜 Sobre los recursos</h3>
+              <p className="text-ink-soft">Los campos de grano producen <strong>paja</strong> automáticamente (40% del ratio).</p>
+              <p className="text-ink-soft">La paja se convierte lentamente en <strong>adobe</strong>, material básico para construir.</p>
+              <p className="text-ink-soft"><strong>Madera + piedra</strong> levantan estructuras de mayor envergadura.</p>
+              <p className="text-ink-soft"><strong>Plata y oro</strong> son la moneda de comercio y diplomacia.</p>
             </div>
           </div>
         )}

@@ -21,37 +21,30 @@ export default function LoginPage() {
   }
 
   return (
-    <main className="min-h-screen flex items-center justify-center bg-stone-950 px-4">
-      <div className="w-full max-w-sm bg-stone-900 rounded-xl p-8 border border-stone-800 space-y-6">
-        <h1 className="text-2xl font-bold text-amber-400 text-center">Iniciar sesión</h1>
+    <main className="min-h-screen flex items-center justify-center px-4 py-12">
+      <div className="parchment w-full max-w-sm p-8 space-y-6">
+        <div className="text-center space-y-2">
+          <div className="text-4xl">⚜</div>
+          <h1 className="font-display text-2xl text-ink">Acceso al castillo</h1>
+          <p className="text-ink-soft text-sm italic">Identifícate, noble caballero</p>
+        </div>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-sm text-stone-400 mb-1">Email</label>
-            <input
-              type="email" value={email} onChange={e => setEmail(e.target.value)}
-              className="w-full bg-stone-800 border border-stone-700 rounded px-3 py-2 text-stone-100 focus:outline-none focus:border-amber-500"
-              required
-            />
+            <label className="block text-sm text-ink-soft mb-1 font-display">Correo</label>
+            <input type="email" value={email} onChange={e => setEmail(e.target.value)} className="w-full" required />
           </div>
           <div>
-            <label className="block text-sm text-stone-400 mb-1">Contraseña</label>
-            <input
-              type="password" value={password} onChange={e => setPassword(e.target.value)}
-              className="w-full bg-stone-800 border border-stone-700 rounded px-3 py-2 text-stone-100 focus:outline-none focus:border-amber-500"
-              required
-            />
+            <label className="block text-sm text-ink-soft mb-1 font-display">Contraseña</label>
+            <input type="password" value={password} onChange={e => setPassword(e.target.value)} className="w-full" required />
           </div>
-          {error && <p className="text-red-400 text-sm">{error}</p>}
-          <button
-            type="submit" disabled={loading}
-            className="w-full py-2 rounded bg-amber-600 hover:bg-amber-500 font-semibold disabled:opacity-50 transition-colors"
-          >
-            {loading ? "Entrando…" : "Entrar"}
+          {error && <p className="text-blood text-sm italic">{error}</p>}
+          <button type="submit" disabled={loading} className="btn-medieval w-full">
+            {loading ? "Entrando…" : "⚔ Entrar"}
           </button>
         </form>
-        <p className="text-stone-500 text-sm text-center">
-          ¿Sin cuenta?{" "}
-          <Link href="/register" className="text-amber-400 hover:underline">Regístrate</Link>
+        <p className="text-ink-soft text-sm text-center">
+          ¿No tienes crónica?{" "}
+          <Link href="/register" className="underline text-blood font-semibold">Crear una</Link>
         </p>
       </div>
     </main>

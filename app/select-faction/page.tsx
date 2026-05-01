@@ -6,33 +6,33 @@ import { HEROES } from "@/lib/game/constants/heroes";
 const FACTIONS = [
   {
     key: "ENGLAND" as const,
-    flag: "🏴󠁧󠁢󠁥󠁮󠁧󠁿",
+    crest: "🦁",
     name: "Inglaterra",
-    color: "border-red-600 hover:border-red-400",
-    accent: "text-red-400",
-    bg: "hover:bg-red-950/30",
-    desc: "El arco largo inglés es la fuerza más temida de Europa. Tus arqueros largos diezmarán cualquier ejército en campo abierto.",
-    strengths: ["Arqueros largos (OFF suprema)", "Rápida exploración (Hobelar)", "Ingeniería de asedio avanzada"],
+    motto: "Dieu et mon droit",
+    accent: "border-red-700 hover:border-red-500",
+    select: "ring-red-500",
+    desc: "El arco largo inglés es el azote de Europa. Tus arqueros diezmarán a cualquier ejército antes de que pueda cargar.",
+    strengths: ["Arquero largo (OFF letal)", "Hobelar — exploración rápida", "Trebuchets devastadores"],
   },
   {
     key: "FRANCE" as const,
-    flag: "🇫🇷",
+    crest: "⚜",
     name: "Francia",
-    color: "border-blue-600 hover:border-blue-400",
-    accent: "text-blue-400",
-    bg: "hover:bg-blue-950/30",
-    desc: "Los Chevaliers franceses son la élite de la caballería europea. Apoyados por la artillería de Bureau, ninguna muralla resiste.",
-    strengths: ["Chevaliers (mejor caballería)", "Bombarda de Bureau (mejor asedio)", "Ballesteros genoveses (OFF a distancia)"],
+    motto: "Montjoie Saint-Denis",
+    accent: "border-blue-700 hover:border-blue-500",
+    select: "ring-blue-500",
+    desc: "Los Chevaliers cargan con la furia de mil tormentas. La bombarda de Bureau hará temblar las murallas inglesas.",
+    strengths: ["Chevaliers — caballería suprema", "Bombarda de Bureau (asedio)", "Ballestero genovés"],
   },
   {
     key: "SPAIN" as const,
-    flag: "🇪🇸",
-    name: "España",
-    color: "border-yellow-600 hover:border-yellow-400",
-    accent: "text-yellow-400",
-    bg: "hover:bg-yellow-950/30",
-    desc: "La caballería ligera Jinete y los Almogávares hacen de España el maestro de la guerra de guerrillas y la velocidad.",
-    strengths: ["Jinetes (más rápida del mapa)", "Almogávares (choque élite)", "Caballeros de Santiago (DEF élite)"],
+    crest: "🛡",
+    name: "Castilla",
+    motto: "Tanto monta",
+    accent: "border-yellow-700 hover:border-yellow-500",
+    select: "ring-yellow-500",
+    desc: "El Jinete y el Almogávar dominan la guerra de movimiento. Donde la velocidad y la astucia mandan, Castilla vence.",
+    strengths: ["Jinete (la más rápida)", "Almogávar — choque élite", "Caballeros de Santiago"],
   },
 ];
 
@@ -46,8 +46,7 @@ export default function SelectFactionPage() {
     if (!selected) return;
     setLoading(true); setError("");
     const res = await fetch("/api/game/create", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
+      method: "POST", headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ faction: selected }),
     });
     setLoading(false);
@@ -57,14 +56,15 @@ export default function SelectFactionPage() {
   }
 
   return (
-    <main className="min-h-screen bg-stone-950 px-4 py-12">
-      <div className="max-w-4xl mx-auto space-y-8">
-        <div className="text-center space-y-2">
-          <h1 className="text-4xl font-bold text-amber-400">Elige tu facción</h1>
-          <p className="text-stone-400">Tu elección determina tus tropas, tu héroe y tu estrategia.</p>
+    <main className="min-h-screen px-4 py-12">
+      <div className="max-w-5xl mx-auto space-y-8">
+        <div className="text-center space-y-3">
+          <div className="text-5xl">⚜</div>
+          <h1 className="font-display text-4xl title-gold">Elige tu reino</h1>
+          <p className="text-parchment-aged italic">Tu juramento de hoy decide el destino de Europa.</p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
           {FACTIONS.map(f => {
             const hero = HEROES[f.key];
             const isSelected = selected === f.key;
@@ -72,41 +72,54 @@ export default function SelectFactionPage() {
               <button
                 key={f.key}
                 onClick={() => setSelected(f.key)}
-                className={`text-left p-6 rounded-xl border-2 transition-all space-y-4 ${f.color} ${f.bg} ${isSelected ? "ring-2 ring-amber-400" : "border-stone-700"}`}
+                className={`text-left transition-all ${isSelected ? `ring-4 ${f.select}` : ""} parchment p-5 space-y-3 hover:scale-[1.02] overflow-hidden`}
               >
                 <div className="flex items-center gap-3">
-                  <span className="text-4xl">{f.flag}</span>
+                  <img
+                    src={`/factions/${f.key.toLowerCase()}.png`}
+                    onError={e => { (e.target as HTMLImageElement).style.display = "none"; }}
+                    alt={f.name}
+                    className="w-16 h-16 object-cover rounded-sm border-2 border-bronze"
+                  />
                   <div>
-                    <h2 className={`text-xl font-bold ${f.accent}`}>{f.name}</h2>
-                    <p className="text-xs text-stone-400">Héroe: {hero.name}</p>
+                    <h2 className="font-display text-2xl text-ink">{f.name}</h2>
+                    <p className="text-xs italic text-ink-soft">«{f.motto}»</p>
                   </div>
+                  <span className="ml-auto text-3xl">{f.crest}</span>
                 </div>
-                <p className="text-sm text-stone-300">{f.desc}</p>
+                <div className="border-t border-bronze pt-3">
+                  <p className="text-sm text-ink">{f.desc}</p>
+                </div>
                 <div className="space-y-1">
                   {f.strengths.map(s => (
-                    <p key={s} className="text-xs text-stone-400 flex items-center gap-1">
-                      <span className="text-amber-500">▸</span> {s}
+                    <p key={s} className="text-xs text-ink-soft flex items-center gap-1">
+                      <span className="text-bronze">✦</span> {s}
                     </p>
                   ))}
                 </div>
-                <div className="mt-2 p-3 bg-stone-900/60 rounded text-xs space-y-1">
-                  <p className={`font-semibold ${f.accent}`}>{hero.title}</p>
-                  <p className="text-stone-400">{hero.abilityDesc}</p>
+                <div className="mt-3 p-3 border border-bronze rounded flex gap-3">
+                  <img
+                    src={`/heroes/${f.key.toLowerCase()}.png`}
+                    onError={e => { (e.target as HTMLImageElement).style.display = "none"; }}
+                    alt={hero.name}
+                    className="w-20 h-20 object-cover rounded-sm border border-bronze flex-shrink-0"
+                  />
+                  <div className="flex-1">
+                    <p className="font-display text-sm text-ink leading-tight">{hero.name}</p>
+                    <p className="text-xs italic text-ink-soft">{hero.title}</p>
+                    <p className="text-xs text-ink mt-1 leading-tight">{hero.abilityDesc}</p>
+                  </div>
                 </div>
               </button>
             );
           })}
         </div>
 
-        {error && <p className="text-red-400 text-center">{error}</p>}
+        {error && <p className="text-blood-bright text-center italic">{error}</p>}
 
         <div className="flex justify-center">
-          <button
-            onClick={startGame}
-            disabled={!selected || loading}
-            className="px-12 py-3 rounded-lg bg-amber-600 hover:bg-amber-500 font-bold text-lg disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-          >
-            {loading ? "Generando mundo…" : "Comenzar campaña"}
+          <button onClick={startGame} disabled={!selected || loading} className="btn-medieval text-lg px-12 py-4">
+            {loading ? "Forjando el reino…" : "⚔ Iniciar campaña"}
           </button>
         </div>
       </div>
