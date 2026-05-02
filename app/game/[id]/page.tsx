@@ -111,6 +111,7 @@ export default function GamePage({ params }: { params: Promise<{ id: string }> }
   const [zoomIdx, setZoomIdx] = useState<ZoomIdx>(1);
   const [clock, setClock] = useState(Date.now());
   const [spyLoading, setSpyLoading] = useState(false);
+  const [tributeLoading, setTributeLoading] = useState(false);
   const [showEvents, setShowEvents] = useState(false);
   const toastId = useRef(0);
 
@@ -199,6 +200,20 @@ export default function GamePage({ params }: { params: Promise<{ id: string }> }
     else { const d = await res.json(); showToast(d.error ?? "Error al unir", "warn"); }
   }
 
+  async function tributeMission(armyId: string, targetVillageId: string) {
+    setTributeLoading(true);
+    const res = await fetch(`/api/game/${id}/army`, {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "TRIBUTE", payload: { armyId, targetVillageId } }),
+    });
+    const d = await res.json();
+    setTributeLoading(false);
+    if (!res.ok) { showToast(d.error ?? "Error al negociar", "warn"); return; }
+    showToast(`💰 ${d.villageName} se une al reino (−${d.silverCost} 🪙)`, "win");
+    setSelected(null);
+    loadMap();
+  }
+
   async function spyMission(armyId: string, targetVillageId: string) {
     setSpyLoading(true);
     const res = await fetch(`/api/game/${id}/army`, {
@@ -251,6 +266,12 @@ export default function GamePage({ params }: { params: Promise<{ id: string }> }
   const spyEligibleArmy = selected?.village?.owner === "AI_RIVAL"
     ? playerArmiesOnSelected.find(a => a.troops.some(t => t.type === "SPY"))
     : null;
+
+  // Tribute eligibility: player army on neutral village tile
+  const tributeEligibleArmy = selected?.village?.owner === "AI_NEUTRAL"
+    ? (playerArmiesOnSelected.length > 0 ? playerArmiesOnSelected[0] : null)
+    : null;
+  const tributeCost = selected?.village ? Math.round(selected.village.loyalty * 2.5) : 0;
 
   return (
     <div className="min-h-screen flex flex-col bg-stone-950">
@@ -352,6 +373,27 @@ export default function GamePage({ params }: { params: Promise<{ id: string }> }
             {" · "}
             <Link href={`/game/${id}/village/${pr.id}`} className="underline hover:text-gold-pale">Gobernar →</Link>
           </div>
+        </div>
+      )}
+
+      {/* ── VICTORY PROGRESS BAR ──────────────────────────────── */}
+      {mapData.status === "PLAYING" && (
+        <div className="bg-[#130c06] border-b border-bronze/40 px-3 py-1 flex items-center gap-3 flex-shrink-0">
+          <span className="text-[10px] text-parchment-dark font-display uppercase tracking-wider whitespace-nowrap">
+            Conquista
+          </span>
+          <div className="flex-1 h-2 bg-stone-900 rounded-full overflow-hidden border border-bronze/20">
+            <div
+              className="h-full rounded-full bg-gradient-to-r from-amber-900 to-amber-500 transition-all"
+              style={{ width: `${Math.min(100, (stats.playerVillages / 15) * 100)}%` }}
+            />
+          </div>
+          <span className="text-[10px] text-amber-400 font-display whitespace-nowrap">
+            {stats.playerVillages}/15 aldeas
+          </span>
+          {stats.rivalVillages === 0 && stats.playerVillages > 0 && (
+            <span className="text-[10px] text-emerald-400 italic">¡Sin rivales!</span>
+          )}
         </div>
       )}
 
@@ -573,6 +615,17 @@ export default function GamePage({ params }: { params: Promise<{ id: string }> }
                       className="block text-center btn-medieval text-xs py-1 mt-1">
                       🏰 Gobernar aldea
                     </Link>
+                  )}
+
+                  {/* TRIBUTE button — neutral village + player army on tile */}
+                  {tributeEligibleArmy && (
+                    <button
+                      onClick={() => tributeMission(tributeEligibleArmy.id, selected.village!.id)}
+                      disabled={tributeLoading}
+                      className="w-full mt-1 text-xs px-3 py-1.5 rounded bg-amber-900/50 hover:bg-amber-800 border border-amber-700/60 text-amber-200 disabled:opacity-50 font-display"
+                    >
+                      {tributeLoading ? "⏳ Negociando…" : `💰 Pagar tributo (${tributeCost} 🪙 plata)`}
+                    </button>
                   )}
 
                   {/* SPY MISSION button */}

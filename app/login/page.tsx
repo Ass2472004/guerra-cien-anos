@@ -17,7 +17,7 @@ export default function LoginPage() {
     const res = await signIn("credentials", { email, password, redirect: false });
     setLoading(false);
     if (res?.error) { setError("Email o contraseña incorrectos"); return; }
-    router.push("/select-faction");
+    router.push("/dashboard");
   }
 
   return (

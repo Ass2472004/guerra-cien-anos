@@ -12,8 +12,11 @@ interface HeroData {
   armyId: string | null;
   equipment: Array<{ id: string; slot: string; item: string; tier: number; bonusJson: string }>;
 }
-
 interface HeroDef { name: string; title: string; ability: string; abilityDesc: string; historical: string; }
+interface AdventureDef {
+  key: string; name: string; icon: string; desc: string;
+  durationMin: number; xpMin: number; xpMax: number; itemChance: number; silverReward: number;
+}
 
 const SLOTS = [
   { key: "HELMET", icon: "🪖", name: "Yelmo" },
@@ -24,26 +27,36 @@ const SLOTS = [
   { key: "BOOTS",  icon: "👢", name: "Botas" },
 ];
 
-function timeLeft(endsAt: string | null) {
+function timeLeft(endsAt: string | null): string {
   if (!endsAt) return "";
   const diff = new Date(endsAt).getTime() - Date.now();
-  if (diff <= 0) return "Listo";
+  if (diff <= 0) return "¡Listo!";
   const m = Math.floor(diff / 60000);
   const s = Math.floor((diff % 60000) / 1000);
   return `${m}m ${s}s`;
 }
 
+const STAT_LABELS: Record<string, { icon: string; label: string; color: string }> = {
+  fightingStrength: { icon: "⚔", label: "Fuerza de combate",    color: "text-orange-300" },
+  attackBonus:      { icon: "🗡", label: "Bonus de ataque (%)",  color: "text-red-300" },
+  defenseBonus:     { icon: "🛡", label: "Bonus de defensa (%)", color: "text-blue-300" },
+  resourceBonus:    { icon: "🌾", label: "Bonus de recursos (%)", color: "text-emerald-300" },
+};
+
 export default function HeroPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
-  const [data, setData] = useState<{ hero: HeroData; def: HeroDef; items: any } | null>(null);
+  const [data, setData] = useState<{ hero: HeroData; def: HeroDef; items: any; adventureTypes: Record<string, AdventureDef> } | null>(null);
   const [allocation, setAllocation] = useState({ fightingStrength: 0, attackBonus: 0, defenseBonus: 0, resourceBonus: 0 });
-  const [msg, setMsg] = useState("");
+  const [msg, setMsg] = useState<{ text: string; ok: boolean } | null>(null);
+  const [selectedAdventure, setSelectedAdventure] = useState<string>("RUINS");
+  const [, setClock] = useState(Date.now());
 
   async function load() {
     const res = await fetch(`/api/game/${id}/hero`);
     if (res.ok) setData(await res.json());
   }
   useEffect(() => { load(); const t = setInterval(load, 8000); return () => clearInterval(t); }, []);
+  useEffect(() => { const t = setInterval(() => setClock(Date.now()), 1000); return () => clearInterval(t); }, []);
 
   async function call(action: string, payload: any = {}) {
     const res = await fetch(`/api/game/${id}/hero`, {
@@ -51,15 +64,32 @@ export default function HeroPage({ params }: { params: Promise<{ id: string }> }
       body: JSON.stringify({ action, payload }),
     });
     const d = await res.json();
-    if (d.xpReward) setMsg(`Aventura: +${d.xpReward} XP${d.item ? ` y obtenido: ${d.item.replaceAll("_", " ")}` : ""}`);
-    else setMsg(d.error ?? (d.ok ? "Hecho." : "Error"));
-    if (d.ok || d.xpReward) load();
-    setTimeout(() => setMsg(""), 4500);
+    let text = d.error ?? "Error";
+    let ok = false;
+    if (d.xpReward !== undefined) {
+      text = `+${d.xpReward} XP`;
+      if (d.item) text += ` · Objeto: ${d.item.replace(/_/g, " ")}`;
+      if (d.silverReward) text += ` · +${d.silverReward} 🪙 plata`;
+      ok = true;
+    } else if (d.ok) {
+      text = action === "ADVENTURE" ? `${d.name ?? "Aventura"} iniciada — ${Math.floor((d.eta ?? 300) / 60)}m` : "Hecho.";
+      ok = true;
+    }
+    setMsg({ text, ok });
+    if (d.ok || d.xpReward !== undefined) load();
+    setTimeout(() => setMsg(null), 5000);
   }
 
-  if (!data) return <div className="min-h-screen flex items-center justify-center title-gold font-display text-2xl">Convocando al héroe…</div>;
-  const { hero, def } = data;
-  const totalAllocated = allocation.fightingStrength + allocation.attackBonus + allocation.defenseBonus + allocation.resourceBonus;
+  if (!data) return (
+    <div className="min-h-screen flex items-center justify-center title-gold font-display text-2xl">
+      Convocando al héroe…
+    </div>
+  );
+
+  const { hero, def, adventureTypes } = data;
+  const totalAllocated = Object.values(allocation).reduce((a, b) => a + b, 0);
+  const adventureReady = hero.isOnAdventure && hero.adventureEndsAt && new Date(hero.adventureEndsAt) <= new Date();
+  const xpPct = Math.min(100, (hero.xp / hero.xpNext) * 100);
 
   return (
     <div className="min-h-screen">
@@ -68,11 +98,15 @@ export default function HeroPage({ params }: { params: Promise<{ id: string }> }
         <span className="text-2xl">⚔</span>
         <h1 className="font-display title-gold text-lg">{def.name}</h1>
         <span className="text-xs italic text-parchment-aged">{def.title}</span>
-        {msg && <p className="ml-auto text-sm text-gold-bright italic">{msg}</p>}
+        {msg && (
+          <p className={`ml-auto text-sm italic font-display ${msg.ok ? "text-gold-bright" : "text-blood-bright"}`}>{msg.text}</p>
+        )}
       </header>
 
       <div className="max-w-4xl mx-auto p-4 space-y-4">
-        <div className="parchment p-5 flex gap-4">
+
+        {/* Hero card */}
+        <div className="parchment p-5 flex gap-5">
           <img
             src={`/heroes/${hero.faction.toLowerCase()}.png`}
             onError={e => { (e.target as HTMLImageElement).style.display = "none"; }}
@@ -80,81 +114,110 @@ export default function HeroPage({ params }: { params: Promise<{ id: string }> }
             className="w-32 h-32 object-cover rounded-sm border-2 border-bronze flex-shrink-0"
           />
           <div className="flex-1 space-y-3">
-            <p className="text-ink-soft italic text-sm">«{def.historical}»</p>
-            <div className="border-2 border-bronze p-3 bg-amber-100/40">
+            <p className="text-ink-soft italic text-sm leading-relaxed">«{def.historical}»</p>
+            <div className="border-2 border-bronze p-3 bg-amber-100/40 rounded-sm">
               <p className="text-ink font-display text-sm">⚜ {def.ability.replace(/_/g, " ")}</p>
               <p className="text-ink-soft text-sm mt-1">{def.abilityDesc}</p>
             </div>
           </div>
         </div>
 
+        {/* Stats */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-          <div className="stat-box">
-            <p className="text-xs text-parchment-aged uppercase tracking-wider">Nivel</p>
+          {/* Level */}
+          <div className="parchment-dark p-3 rounded border border-bronze/40 space-y-1">
+            <p className="text-[10px] text-parchment-aged uppercase tracking-wider">Nivel</p>
             <p className="text-3xl font-display text-gold-bright">{hero.level}</p>
-            <div className="w-full bg-stone-900 rounded-full h-1 mt-1 border border-bronze">
-              <div className="bg-gold-bright h-full rounded-full" style={{ width: `${(hero.xp / hero.xpNext) * 100}%` }} />
+            <div className="w-full bg-stone-900 rounded-full h-1.5 border border-bronze/30 overflow-hidden">
+              <div className="bg-gold-bright h-full rounded-full transition-all" style={{ width: `${xpPct}%` }} />
             </div>
-            <p className="text-xs text-parchment-dark">{hero.xp}/{hero.xpNext} XP</p>
+            <p className="text-[10px] text-parchment-dark">{hero.xp} / {hero.xpNext} XP</p>
           </div>
-          <div className="stat-box">
-            <p className="text-xs text-parchment-aged uppercase tracking-wider">Vida</p>
+          {/* HP */}
+          <div className="parchment-dark p-3 rounded border border-bronze/40 space-y-1">
+            <p className="text-[10px] text-parchment-aged uppercase tracking-wider">Vida</p>
             <p className="text-3xl font-display text-blood-bright">{hero.hp}/{hero.maxHp}</p>
-            {!hero.isAlive && <p className="text-xs text-blood-bright italic">Reviviendo… {timeLeft(hero.revivesAt)}</p>}
+            {!hero.isAlive && <p className="text-[10px] text-blood-bright italic">💀 Reviviendo… {timeLeft(hero.revivesAt)}</p>}
           </div>
-          <div className="stat-box">
-            <p className="text-xs text-parchment-aged uppercase tracking-wider">Fuerza</p>
+          {/* Strength */}
+          <div className="parchment-dark p-3 rounded border border-bronze/40 space-y-1">
+            <p className="text-[10px] text-parchment-aged uppercase tracking-wider">Fuerza</p>
             <p className="text-3xl font-display text-orange-300">{hero.fightingStrength}</p>
           </div>
-          <div className="stat-box">
-            <p className="text-xs text-parchment-aged uppercase tracking-wider">Puntos</p>
+          {/* Skill points */}
+          <div className="parchment-dark p-3 rounded border border-bronze/40 space-y-1">
+            <p className="text-[10px] text-parchment-aged uppercase tracking-wider">Puntos libres</p>
             <p className="text-3xl font-display text-gold-pale">{hero.skillPoints}</p>
           </div>
         </div>
 
+        {/* Bonuses bar */}
+        <div className="parchment p-4 grid grid-cols-2 sm:grid-cols-4 gap-3">
+          {(["fightingStrength", "attackBonus", "defenseBonus", "resourceBonus"] as const).map(k => {
+            const s = STAT_LABELS[k];
+            return (
+              <div key={k} className="text-center">
+                <p className="text-xl">{s.icon}</p>
+                <p className={`font-display text-lg font-bold ${s.color}`}>{(hero as any)[k]}{k !== "fightingStrength" ? "%" : ""}</p>
+                <p className="text-[10px] text-ink-soft">{s.label}</p>
+              </div>
+            );
+          })}
+        </div>
+
+        {/* Skill point allocation */}
         {hero.skillPoints > 0 && (
           <div className="parchment p-4 space-y-3">
-            <h2 className="font-display text-ink">📜 Distribuir puntos ({hero.skillPoints})</h2>
-            {([
-              { key: "fightingStrength", label: "Fuerza de combate" },
-              { key: "attackBonus", label: "Bonus de ataque (%)" },
-              { key: "defenseBonus", label: "Bonus de defensa (%)" },
-              { key: "resourceBonus", label: "Bonus de recursos (%)" },
-            ] as const).map(s => (
-              <div key={s.key} className="flex items-center gap-3">
-                <span className="w-44 text-sm text-ink">{s.label}</span>
-                <button onClick={() => setAllocation({ ...allocation, [s.key]: Math.max(0, allocation[s.key] - 1) })} className="w-8 h-8 rounded-sm border border-bronze bg-wood-light text-parchment hover:bg-wood">−</button>
-                <span className="w-8 text-center font-bold font-display text-ink">{allocation[s.key]}</span>
-                <button onClick={() => totalAllocated < hero.skillPoints && setAllocation({ ...allocation, [s.key]: allocation[s.key] + 1 })} disabled={totalAllocated >= hero.skillPoints} className="w-8 h-8 rounded-sm border border-bronze bg-wood-light text-parchment hover:bg-wood disabled:opacity-40">+</button>
-              </div>
-            ))}
+            <h2 className="font-display text-ink flex items-center gap-2">
+              📜 Distribuir puntos
+              <span className="text-gold-bright font-display">({hero.skillPoints - totalAllocated} restantes)</span>
+            </h2>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {(["fightingStrength", "attackBonus", "defenseBonus", "resourceBonus"] as const).map(k => {
+                const s = STAT_LABELS[k];
+                return (
+                  <div key={k} className="flex items-center gap-3 parchment-dark p-2.5 rounded border border-bronze/30">
+                    <span className="text-lg">{s.icon}</span>
+                    <span className={`flex-1 text-sm ${s.color}`}>{s.label}</span>
+                    <button onClick={() => setAllocation(a => ({ ...a, [k]: Math.max(0, a[k] - 1) }))}
+                      className="w-7 h-7 rounded border border-bronze bg-wood-light text-parchment hover:bg-wood text-sm">−</button>
+                    <span className="w-6 text-center font-bold font-display text-parchment">{allocation[k]}</span>
+                    <button
+                      onClick={() => totalAllocated < hero.skillPoints && setAllocation(a => ({ ...a, [k]: a[k] + 1 }))}
+                      disabled={totalAllocated >= hero.skillPoints}
+                      className="w-7 h-7 rounded border border-bronze bg-wood-light text-parchment hover:bg-wood text-sm disabled:opacity-30">+</button>
+                  </div>
+                );
+              })}
+            </div>
             <button
               onClick={async () => { await call("ALLOCATE", allocation); setAllocation({ fightingStrength: 0, attackBonus: 0, defenseBonus: 0, resourceBonus: 0 }); }}
               disabled={totalAllocated === 0}
-              className="btn-medieval"
+              className="btn-medieval disabled:opacity-40"
             >
-              Aplicar
+              ✓ Aplicar ({totalAllocated} puntos)
             </button>
           </div>
         )}
 
+        {/* Equipment */}
         <div className="parchment-dark p-4 space-y-3">
-          <h2 className="font-display text-gold-bright">⚔ Equipamiento</h2>
+          <h2 className="font-display text-gold-bright">⚔ Equipamiento del héroe</h2>
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
             {SLOTS.map(slot => {
               const eq = hero.equipment.find(e => e.slot === slot.key);
               const itemDef = eq ? data.items[eq.item] : null;
               return (
-                <div key={slot.key} className={`p-3 rounded border-2 ${eq ? "bg-[#3a2818] border-gold" : "bg-wood-dark/40 border-bronze border-dashed"}`}>
+                <div key={slot.key} className={`p-3 rounded border-2 ${eq ? "bg-[#3a2818] border-gold/60" : "bg-wood-dark/30 border-bronze/30 border-dashed"}`}>
                   <div className="flex items-center gap-2">
                     <span className="text-2xl">{slot.icon}</span>
                     <div>
-                      <p className="text-xs text-parchment-aged uppercase tracking-wider">{slot.name}</p>
-                      <p className="font-display text-sm text-parchment">{itemDef?.name ?? "—"}</p>
+                      <p className="text-[10px] text-parchment-aged uppercase tracking-wider">{slot.name}</p>
+                      <p className="font-display text-sm text-parchment">{itemDef?.name ?? <span className="text-parchment-dark italic">Vacío</span>}</p>
                     </div>
                   </div>
                   {eq && (
-                    <p className="text-xs text-gold-pale mt-1">
+                    <p className="text-[10px] text-gold-pale mt-1.5 border-t border-bronze/30 pt-1">
                       Tier {eq.tier} · {Object.entries(JSON.parse(eq.bonusJson)).map(([k, v]) => `+${v} ${k}`).join(", ")}
                     </p>
                   )}
@@ -164,33 +227,71 @@ export default function HeroPage({ params }: { params: Promise<{ id: string }> }
           </div>
         </div>
 
-        <div className="parchment p-4 space-y-3">
-          <h2 className="font-display text-ink">🗺 Aventuras</h2>
+        {/* Adventures */}
+        <div className="parchment p-4 space-y-4">
+          <h2 className="font-display text-ink">🗺 Misiones de aventura</h2>
+
           {hero.isOnAdventure ? (
-            <div>
-              <p className="text-ink-soft italic">El héroe explora antiguas ruinas…</p>
-              <p className="text-ink text-sm mt-1">Termina en: <strong>{timeLeft(hero.adventureEndsAt)}</strong></p>
-              {hero.adventureEndsAt && new Date(hero.adventureEndsAt) <= new Date() && (
-                <button onClick={() => call("COMPLETE_ADVENTURE")} className="btn-medieval mt-2">🎁 Recoger recompensa</button>
+            <div className="space-y-3">
+              <div className="parchment-dark border border-bronze/50 p-4 rounded space-y-2">
+                <p className="font-display text-gold-bright">En misión…</p>
+                <p className="text-ink-soft text-sm italic">Tu héroe está en campo. Regresa en:</p>
+                <p className="text-2xl font-display text-gold-bright">{timeLeft(hero.adventureEndsAt)}</p>
+              </div>
+              {adventureReady && (
+                <button onClick={() => call("COMPLETE_ADVENTURE")} className="btn-medieval w-full">
+                  🎁 Reclamar recompensas
+                </button>
               )}
             </div>
           ) : (
-            <div>
-              <p className="text-ink-soft text-sm italic">Envía al héroe a explorar ruinas en busca de objetos y experiencia (≈5 minutos).</p>
-              <button onClick={() => call("ADVENTURE")} disabled={!hero.isAlive} className="btn-medieval mt-2">🗺 Iniciar aventura</button>
+            <div className="space-y-3">
+              <p className="text-ink-soft text-sm italic">Elige la misión y envía al héroe. Cada tipo ofrece recompensas distintas.</p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {Object.values(adventureTypes).map(adv => {
+                  const isSelected = selectedAdventure === adv.key;
+                  return (
+                    <button
+                      key={adv.key}
+                      onClick={() => setSelectedAdventure(adv.key)}
+                      className={`text-left p-3 rounded border-2 transition-all ${isSelected ? "border-gold bg-amber-950/40" : "border-bronze/40 bg-wood-dark/20 hover:border-bronze/70"}`}
+                    >
+                      <p className="font-display text-sm text-parchment flex items-center gap-1.5">
+                        <span className="text-base">{adv.icon}</span>
+                        {adv.name}
+                        <span className="text-[10px] text-parchment-dark ml-auto">{adv.durationMin} min</span>
+                      </p>
+                      <p className="text-[10px] text-ink-soft mt-1">{adv.desc}</p>
+                      <div className="flex gap-3 mt-2 text-[10px]">
+                        <span className="text-gold-pale">⭐ {adv.xpMin}–{adv.xpMax} XP</span>
+                        {adv.itemChance > 0 && <span className="text-blue-300">🎒 {Math.round(adv.itemChance * 100)}% objeto</span>}
+                        {adv.silverReward > 0 && <span className="text-sky-300">🪙 ~{adv.silverReward} plata</span>}
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+              <button
+                onClick={() => call("ADVENTURE", { adventureType: selectedAdventure })}
+                disabled={!hero.isAlive}
+                className="btn-medieval w-full disabled:opacity-40"
+              >
+                {adventureTypes[selectedAdventure]?.icon ?? "🗺"} Iniciar: {adventureTypes[selectedAdventure]?.name ?? "Aventura"}
+              </button>
             </div>
           )}
         </div>
 
+        {/* Army assignment */}
         <div className="parchment p-4 space-y-2">
           <h2 className="font-display text-ink">🛡 Hueste asignada</h2>
           {hero.armyId ? (
             <div className="flex items-center justify-between">
               <p className="text-ink-soft text-sm italic">El héroe lidera el ejército {hero.armyId.slice(0, 8)}…</p>
-              <button onClick={() => call("ASSIGN_ARMY", { armyId: null })} className="btn-blood text-xs">Dejar ejército</button>
+              <button onClick={() => call("ASSIGN_ARMY", { armyId: null })} className="btn-blood text-xs px-3 py-1">Dejar ejército</button>
             </div>
           ) : (
-            <p className="text-ink-soft text-sm italic">El héroe está en el castillo. Asígnalo a una hueste para dirigir las tropas.</p>
+            <p className="text-ink-soft text-sm italic">El héroe espera en el castillo. Asígnalo a una hueste para aportar sus bonificaciones en combate.</p>
           )}
         </div>
       </div>

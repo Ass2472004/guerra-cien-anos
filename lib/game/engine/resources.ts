@@ -105,13 +105,15 @@ export async function processTick(gameId: string) {
   for (const item of completedTrains) {
     // Find army in village tile or create new one
     const village = await prisma.village.findUniqueOrThrow({ where: { id: item.villageId }, include: { tile: true } });
-    let army = await prisma.army.findFirst({ where: { gameId, tileId: village.tile.id, owner: "PLAYER", isMoving: false } });
+    const owner = village.owner === "AI_RIVAL" ? "AI_RIVAL" : "PLAYER";
+    let army = await prisma.army.findFirst({ where: { gameId, tileId: village.tile.id, owner, isMoving: false } });
 
     if (!army) {
       army = await prisma.army.create({
         data: {
-          gameId, owner: "PLAYER", faction: village.faction ?? "ENGLAND",
-          tileId: village.tile.id, name: "Ejército",
+          gameId, owner, faction: village.faction ?? "ENGLAND",
+          tileId: village.tile.id,
+          name: owner === "AI_RIVAL" ? "Hueste rival" : "Ejército",
         },
       });
     }

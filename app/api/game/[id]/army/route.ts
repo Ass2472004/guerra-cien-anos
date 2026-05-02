@@ -101,5 +101,51 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     return NextResponse.json(result);
   }
 
+  if (action === "TRIBUTE") {
+    // Pay silver to convert a neutral village diplomatically
+    const { armyId, targetVillageId } = payload as { armyId: string; targetVillageId: string };
+
+    const army = await prisma.army.findFirst({ where: { id: armyId, gameId: id, owner: "PLAYER" } });
+    if (!army) return NextResponse.json({ error: "Ejército no encontrado" }, { status: 404 });
+
+    const targetVillage = await prisma.village.findFirst({ where: { id: targetVillageId, gameId: id } });
+    if (!targetVillage) return NextResponse.json({ error: "Aldea no encontrada" }, { status: 404 });
+    if (targetVillage.owner !== "AI_NEUTRAL") return NextResponse.json({ error: "Solo puedes tributar aldeas neutrales" }, { status: 400 });
+    if (army.tileId !== targetVillage.tileId) return NextResponse.json({ error: "El ejército debe estar en la misma casilla" }, { status: 400 });
+
+    // Cost scales with loyalty (loyal villages are harder to buy)
+    const silverCost = Math.round(targetVillage.loyalty * 2.5);
+
+    // Deduct from player's main village
+    const playerVillage = await prisma.village.findFirst({ where: { gameId: id, owner: "PLAYER" } });
+    if (!playerVillage) return NextResponse.json({ error: "Sin aldeas propias" }, { status: 400 });
+    if (playerVillage.silver < silverCost) {
+      return NextResponse.json({ error: `Necesitas ${silverCost} 🪙 plata (tienes ${playerVillage.silver})` }, { status: 400 });
+    }
+
+    await prisma.$transaction([
+      prisma.village.update({
+        where: { id: playerVillage.id },
+        data: { silver: playerVillage.silver - silverCost },
+      }),
+      prisma.village.update({
+        where: { id: targetVillageId },
+        data: { owner: "PLAYER", faction: game.faction, loyalty: 55 },
+      }),
+      prisma.gameEvent.create({
+        data: {
+          gameId: id,
+          type: "DISCOVERY",
+          title: `${targetVillage.name} se une al reino`,
+          description: `Mediante el pago de ${silverCost} monedas de plata, ${targetVillage.name} ha jurado lealtad a tu estandarte sin que corra sangre.`,
+          affectedId: targetVillageId,
+          effectJson: JSON.stringify({ silver: -silverCost }),
+        },
+      }),
+    ]);
+
+    return NextResponse.json({ ok: true, silverCost, villageName: targetVillage.name });
+  }
+
   return NextResponse.json({ error: "Accion desconocida" }, { status: 400 });
 }
