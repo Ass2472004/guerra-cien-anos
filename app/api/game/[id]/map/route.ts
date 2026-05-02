@@ -46,11 +46,32 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
     },
   });
 
+  // Stats
+  const [playerVillages, rivalVillages, totalBattles, totalTroops] = await Promise.all([
+    prisma.village.count({ where: { gameId: id, owner: "PLAYER" } }),
+    prisma.village.count({ where: { gameId: id, owner: "AI_RIVAL" } }),
+    prisma.battle.count({ where: { gameId: id } }),
+    prisma.armyTroop.aggregate({
+      where: { army: { gameId: id, owner: "PLAYER" } },
+      _sum: { count: true },
+    }),
+  ]);
+
+  // Recent unread events (last 5)
+  const recentEvents = await prisma.gameEvent.findMany({
+    where: { gameId: id },
+    orderBy: { createdAt: "desc" },
+    take: 5,
+    select: { id: true, type: true, title: true, description: true, isRead: true, createdAt: true, affectedId: true },
+  });
+
   return NextResponse.json({
     width: game.mapWidth,
     height: game.mapHeight,
     faction: game.faction,
     tick: game.tick,
+    status: game.status,
+    statusReason: game.statusReason,
     nobilityTitle: game.nobilityTitle,
     nobilityXp: game.nobilityXp,
     tiles: game.tiles.map(t => ({
@@ -64,5 +85,12 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
     armies: game.armies,
     hero: game.hero,
     playerResources: playerVillage,
+    stats: {
+      playerVillages,
+      rivalVillages,
+      totalBattles,
+      totalTroops: totalTroops._sum.count ?? 0,
+    },
+    recentEvents,
   });
 }

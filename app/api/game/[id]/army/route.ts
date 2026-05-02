@@ -4,6 +4,7 @@ import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { findPath } from "@/lib/game/engine/supply";
 import { TROOPS } from "@/lib/game/constants/troops";
+import { conductSpyMission } from "@/lib/game/engine/spy";
 
 export async function GET(_req: Request, { params }: { params: Promise<{ id: string }> }) {
   const session = await getServerSession(authOptions);
@@ -92,6 +93,12 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     if (!army) return NextResponse.json({ error: "Ejercito no encontrado" }, { status: 404 });
     await prisma.army.update({ where: { id: armyId }, data: { isForaging: !army.isForaging, isResting: false, isMoving: false } });
     return NextResponse.json({ ok: true, isForaging: !army.isForaging });
+  }
+
+  if (action === "INFILTRATE") {
+    const { armyId, targetVillageId } = payload as { armyId: string; targetVillageId: string };
+    const result = await conductSpyMission(id, armyId, targetVillageId);
+    return NextResponse.json(result);
   }
 
   return NextResponse.json({ error: "Accion desconocida" }, { status: 400 });

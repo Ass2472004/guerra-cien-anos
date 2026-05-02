@@ -8,6 +8,8 @@ import { resolveTileEncounters } from "@/lib/game/engine/battle";
 import { updateFogOfWar } from "@/lib/game/engine/fog";
 import { prisma } from "@/lib/db";
 import { updateNobilityTitle } from "@/lib/game/engine/nobility";
+import { processRandomEvents, checkVictoryConditions } from "@/lib/game/engine/events";
+import { processOasisBonuses } from "@/lib/game/engine/spy";
 
 export async function POST(_req: Request, { params }: { params: Promise<{ id: string }> }) {
   const session = await getServerSession(authOptions);
@@ -50,5 +52,20 @@ export async function POST(_req: Request, { params }: { params: Promise<{ id: st
   // 9) Nobility title update
   await updateNobilityTitle(id);
 
-  return NextResponse.json({ ok: true, tick: game.tick + 1, battles: reports.length });
+  // 10) Random events
+  const newEvent = await processRandomEvents(id);
+
+  // 11) Oasis foraging bonuses
+  await processOasisBonuses(id);
+
+  // 12) Victory / defeat check
+  const verdict = await checkVictoryConditions(id);
+
+  return NextResponse.json({
+    ok: true,
+    tick: game.tick + 1,
+    battles: reports.length,
+    event: newEvent ? { title: newEvent.title, description: newEvent.description, type: newEvent.type } : null,
+    verdict,
+  });
 }

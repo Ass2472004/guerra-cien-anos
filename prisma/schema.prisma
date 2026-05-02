@@ -80,7 +80,12 @@ model Game {
   nobilityTitle String @default("LORD")
   nobilityXp    Int    @default(0)  // prestige points from battles/villages
 
-  user      User      @relation(fields: [userId], references: [id])
+  // Victory / defeat
+  status        String  @default("PLAYING")  // PLAYING | WON | LOST
+  statusReason  String?
+  losingTicks   Int     @default(0)           // consecutive ticks with 0 player villages
+
+  user      User        @relation(fields: [userId], references: [id])
   tiles     Tile[]
   villages  Village[]
   armies    Army[]
@@ -88,6 +93,25 @@ model Game {
   hero      Hero?
   battles   Battle[]
   spyReports SpyReport[]
+  events    GameEvent[]
+}
+
+// ─── GAME EVENTS ──────────────────────────────────────────────────────────────
+// type: GOOD_HARVEST | DROUGHT | PLAGUE | TOURNAMENT | DISCOVERY | BANDITS |
+//       FIRE | REINFORCEMENTS | REBELLION | HOLY_RELIC | MERCENARY | FLOOD
+
+model GameEvent {
+  id          String   @id @default(cuid())
+  gameId      String
+  type        String
+  title       String
+  description String
+  affectedId  String?  // village/army id
+  effectJson  String   @default("{}")
+  isRead      Boolean  @default(false)
+  createdAt   DateTime @default(now())
+
+  game        Game     @relation(fields: [gameId], references: [id], onDelete: Cascade)
 }
 
 // ─── MAP ─────────────────────────────────────────────────────────────────────

@@ -29,12 +29,19 @@ interface PlayerResources {
   woodRate: number; stoneRate: number; ironRate: number; grainRate: number;
   warehouseCap: number; granaryCap: number;
 }
+interface RecentEvent {
+  id: string; type: string; title: string; description: string;
+  isRead: boolean; createdAt: string; affectedId: string | null;
+}
 interface MapData {
   width: number; height: number; faction: string; tick: number;
+  status: string; statusReason: string | null;
   nobilityTitle: string; nobilityXp: number;
   tiles: Tile[]; armies: ArmyOnMap[];
   hero: { tileId: string | null; isOnAdventure: boolean; isAlive: boolean; hp: number; maxHp: number; level: number } | null;
   playerResources: PlayerResources | null;
+  stats: { playerVillages: number; rivalVillages: number; totalBattles: number; totalTroops: number };
+  recentEvents: RecentEvent[];
 }
 
 const TILE_BG: Record<TileType, string> = {
@@ -73,6 +80,12 @@ const TILE_LABEL: Record<TileType, string> = {
   RUINS: "Ruinas", RIVER: "Río", MOUNTAIN: "Montaña", CAMP: "Campamento",
 };
 
+const EVENT_ICONS: Record<string, string> = {
+  GOOD_HARVEST: "🌾", DROUGHT: "☀", PLAGUE: "☠", TOURNAMENT: "⚔", DISCOVERY: "💎",
+  BANDITS: "🗡", FIRE: "🔥", REINFORCEMENTS: "🛡", REBELLION: "⚡", HOLY_RELIC: "✝",
+  MERCENARY: "⚔", FLOOD: "🌊", TREACHERY: "🕵", SIEGE_WEAPON_FOUND: "⚙", VICTORY: "👑",
+};
+
 function timeLeftStr(endsAt: string | null) {
   if (!endsAt) return "";
   const diff = new Date(endsAt).getTime() - Date.now();
@@ -97,6 +110,8 @@ export default function GamePage({ params }: { params: Promise<{ id: string }> }
   const [toasts, setToasts] = useState<{ id: number; msg: string; type: "info" | "warn" | "win" }[]>([]);
   const [zoomIdx, setZoomIdx] = useState<ZoomIdx>(1);
   const [clock, setClock] = useState(Date.now());
+  const [spyLoading, setSpyLoading] = useState(false);
+  const [showEvents, setShowEvents] = useState(false);
   const toastId = useRef(0);
 
   const tileSize = ZOOM_SIZES[zoomIdx];
@@ -104,7 +119,7 @@ export default function GamePage({ params }: { params: Promise<{ id: string }> }
   const showToast = useCallback((msg: string, type: "info" | "warn" | "win" = "info") => {
     const tid = ++toastId.current;
     setToasts(prev => [...prev, { id: tid, msg, type }]);
-    setTimeout(() => setToasts(prev => prev.filter(t => t.id !== tid)), 4000);
+    setTimeout(() => setToasts(prev => prev.filter(t => t.id !== tid)), 4500);
   }, []);
 
   const loadMap = useCallback(async () => {
@@ -112,7 +127,6 @@ export default function GamePage({ params }: { params: Promise<{ id: string }> }
     if (res.ok) setMapData(await res.json());
   }, [id]);
 
-  // Initial load
   useEffect(() => { loadMap(); }, [loadMap]);
 
   // Auto-tick every 30s
@@ -121,22 +135,31 @@ export default function GamePage({ params }: { params: Promise<{ id: string }> }
       const res = await fetch(`/api/game/${id}/tick`, { method: "POST" });
       const data = await res.json();
       if (data.battles > 0) showToast(`⚔ ${data.battles} batalla(s) resuelta(s)`, "warn");
+      if (data.event) showToast(`${EVENT_ICONS[data.event.type] ?? "📜"} ${data.event.title}`, "info");
+      if (data.verdict === "WON") showToast("👑 ¡Victoria!", "win");
+      if (data.verdict === "LOST") showToast("💀 Derrota…", "warn");
       loadMap();
     }, 30000);
     return () => clearInterval(interval);
   }, [id, loadMap, showToast]);
 
-  // Clock ticker for countdowns (every second)
+  // Clock ticker (every second)
   useEffect(() => {
     const t = setInterval(() => setClock(Date.now()), 1000);
     return () => clearInterval(t);
   }, []);
+
+  // Suppress unused warning
+  void clock;
 
   async function manualTick() {
     setTicking(true);
     const res = await fetch(`/api/game/${id}/tick`, { method: "POST" });
     const data = await res.json();
     if (data.battles > 0) showToast(`⚔ ${data.battles} batalla(s) resuelta(s)`, "warn");
+    if (data.event) showToast(`${EVENT_ICONS[data.event.type] ?? "📜"} ${data.event.title}`);
+    if (data.verdict === "WON") showToast("👑 ¡Victoria!", "win");
+    if (data.verdict === "LOST") showToast("💀 Derrota…", "warn");
     await loadMap();
     setTicking(false);
   }
@@ -176,6 +199,23 @@ export default function GamePage({ params }: { params: Promise<{ id: string }> }
     else { const d = await res.json(); showToast(d.error ?? "Error al unir", "warn"); }
   }
 
+  async function spyMission(armyId: string, targetVillageId: string) {
+    setSpyLoading(true);
+    const res = await fetch(`/api/game/${id}/army`, {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "INFILTRATE", payload: { armyId, targetVillageId } }),
+    });
+    const d = await res.json();
+    setSpyLoading(false);
+    if (!res.ok) { showToast(d.error ?? "Misión fracasada", "warn"); return; }
+    if (d.success) {
+      showToast("🕵 Misión exitosa — inteligencia obtenida", "win");
+    } else {
+      showToast("🕵 Agente capturado — misión fracasada", "warn");
+    }
+    loadMap();
+  }
+
   if (!mapData) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center gap-4">
@@ -184,6 +224,9 @@ export default function GamePage({ params }: { params: Promise<{ id: string }> }
       </div>
     );
   }
+
+  // ── GAME OVER OVERLAY ─────────────────────────────────────────────────────
+  const isGameOver = mapData.status === "WON" || mapData.status === "LOST";
 
   const tileMap = new Map(mapData.tiles.map(t => [`${t.x},${t.y}`, t]));
   const armiesByTile = new Map<string, ArmyOnMap[]>();
@@ -194,16 +237,60 @@ export default function GamePage({ params }: { params: Promise<{ id: string }> }
   }
   const armiesOnSelectedTile = selected ? (armiesByTile.get(selected.id) ?? []) : [];
   const playerArmiesOnSelected = armiesOnSelectedTile.filter(a => a.owner === "PLAYER");
-  const rivalArmiesOnSelected = armiesOnSelectedTile.filter(a => a.owner === "AI_RIVAL");
+  const rivalArmiesOnSelected  = armiesOnSelectedTile.filter(a => a.owner === "AI_RIVAL");
 
   const nd = NOBILITY[mapData.nobilityTitle as NobilityTitle];
   const nextNobilityIdx = nd ? NOBILITY_ORDER.indexOf(mapData.nobilityTitle as NobilityTitle) + 1 : -1;
   const nextNd = nextNobilityIdx >= 0 && nextNobilityIdx < NOBILITY_ORDER.length ? NOBILITY[NOBILITY_ORDER[nextNobilityIdx]] : null;
 
   const pr = mapData.playerResources;
+  const stats = mapData.stats ?? { playerVillages: 0, rivalVillages: 0, totalBattles: 0, totalTroops: 0 };
+  const unreadEvents = (mapData.recentEvents ?? []).filter(e => !e.isRead).length;
+
+  // Spy eligibility: player army on same tile as enemy village, with SPY troop
+  const spyEligibleArmy = selected?.village?.owner === "AI_RIVAL"
+    ? playerArmiesOnSelected.find(a => a.troops.some(t => t.type === "SPY"))
+    : null;
 
   return (
     <div className="min-h-screen flex flex-col bg-stone-950">
+
+      {/* ── GAME OVER OVERLAY ────────────────────────────────────── */}
+      {isGameOver && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm">
+          <div className="parchment max-w-md w-full mx-4 p-8 text-center space-y-5 border-4 border-gold/60 shadow-2xl">
+            <div className="text-7xl">
+              {mapData.status === "WON" ? "👑" : "💀"}
+            </div>
+            <h1 className="font-display title-gold text-3xl">
+              {mapData.status === "WON" ? "¡Victoria!" : "Derrota"}
+            </h1>
+            <p className="text-ink-soft italic text-sm leading-relaxed">
+              {mapData.statusReason ?? (mapData.status === "WON"
+                ? "Has conquistado el reino y forjado tu legado en los anales de la historia."
+                : "Tu reino ha caído. Las crónicas recordarán tu valentía.")}
+            </p>
+            <div className="grid grid-cols-3 gap-3 text-center py-2">
+              <div className="parchment-dark rounded p-2">
+                <p className="font-display text-gold-bright text-xl">{stats.playerVillages}</p>
+                <p className="text-ink-soft text-xs">aldeas</p>
+              </div>
+              <div className="parchment-dark rounded p-2">
+                <p className="font-display text-gold-bright text-xl">{stats.totalBattles}</p>
+                <p className="text-ink-soft text-xs">batallas</p>
+              </div>
+              <div className="parchment-dark rounded p-2">
+                <p className="font-display text-gold-bright text-xl">{mapData.tick}</p>
+                <p className="text-ink-soft text-xs">años</p>
+              </div>
+            </div>
+            <div className="flex gap-3 justify-center">
+              <Link href="/dashboard" className="btn-medieval px-6 py-2 text-sm">🏠 Inicio</Link>
+              <Link href={`/game/${id}/events`} className="btn-blood px-6 py-2 text-sm">📜 Crónica</Link>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ── HEADER ─────────────────────────────────────────────── */}
       <header className="banner px-3 py-2 flex items-center justify-between gap-2 border-b-2 border-bronze flex-shrink-0">
@@ -220,7 +307,15 @@ export default function GamePage({ params }: { params: Promise<{ id: string }> }
         <div className="flex items-center gap-1.5 text-xs">
           <Link href={`/game/${id}/hero`} className="btn-medieval text-xs py-1 px-2">⚔ Héroe</Link>
           <Link href={`/game/${id}/nobility`} className="btn-medieval text-xs py-1 px-2">👑 Nobleza</Link>
-          <Link href={`/game/${id}/battles`} className="btn-blood text-xs py-1 px-2">📜 Crónicas</Link>
+          <Link href={`/game/${id}/battles`} className="btn-blood text-xs py-1 px-2">⚔ Batallas</Link>
+          <Link href={`/game/${id}/events`} className="btn-medieval text-xs py-1 px-2 relative">
+            📜 Sucesos
+            {unreadEvents > 0 && (
+              <span className="absolute -top-1 -right-1 bg-red-600 text-white text-[9px] font-bold rounded-full w-4 h-4 flex items-center justify-center">
+                {unreadEvents}
+              </span>
+            )}
+          </Link>
           <button onClick={manualTick} disabled={ticking}
             className="btn-medieval text-xs py-1 px-2 disabled:opacity-50">
             {ticking ? "⏳" : "⏩ Avanzar"}
@@ -247,7 +342,6 @@ export default function GamePage({ params }: { params: Promise<{ id: string }> }
                 <span className={`font-display font-bold text-sm ${r.color}`}>{r.val}</span>
                 {r.rate > 0 && <span className="text-parchment-dark text-[10px] ml-0.5">+{r.rate}</span>}
               </div>
-              {/* Mini progress bar */}
               <div className="absolute -bottom-1 left-0 right-0 h-0.5 bg-stone-800 rounded-full overflow-hidden">
                 <div className="h-full bg-current rounded-full transition-all" style={{ width: `${Math.min(100, (r.val / r.cap) * 100)}%` }} />
               </div>
@@ -329,7 +423,6 @@ export default function GamePage({ params }: { params: Promise<{ id: string }> }
                         {tileSize >= 40 && <span className="text-sm leading-none">{TILE_ICONS[tile.type]}</span>}
                         {tileSize < 40 && tile.type !== "PLAIN" && <span className="text-[10px] leading-none">{TILE_ICONS[tile.type]}</span>}
 
-                        {/* Army indicators */}
                         {playerArmies.length > 0 && (
                           <span className="absolute top-0 right-0 bg-amber-600/90 text-[9px] font-bold px-0.5 leading-tight text-white">
                             {tileSize >= 52 ? `⚔${playerArmies.length > 1 ? playerArmies.length : ""}` : "⚔"}
@@ -340,8 +433,6 @@ export default function GamePage({ params }: { params: Promise<{ id: string }> }
                             {tileSize >= 52 ? `☠${rivalArmies.length > 1 ? rivalArmies.length : ""}` : "☠"}
                           </span>
                         )}
-
-                        {/* Village name at large zoom */}
                         {tileSize >= 64 && tile.village && (
                           <span className="absolute bottom-0 left-0 right-0 text-[8px] text-center bg-black/50 text-parchment leading-tight truncate px-0.5">
                             {tile.village.name}
@@ -359,6 +450,26 @@ export default function GamePage({ params }: { params: Promise<{ id: string }> }
 
         {/* ── SIDEBAR ──────────────────────────────────────────── */}
         <aside className="w-72 xl:w-80 parchment-dark flex flex-col overflow-y-auto border-l-2 border-bronze flex-shrink-0">
+
+          {/* ── STATS MINI-PANEL ─────────────────────────────── */}
+          <div className="px-3 py-2 border-b border-bronze/50 grid grid-cols-4 gap-1 text-center">
+            <div>
+              <p className="font-display text-amber-400 text-sm font-bold">{stats.playerVillages}</p>
+              <p className="text-[9px] text-parchment-dark">Aldeas</p>
+            </div>
+            <div>
+              <p className="font-display text-red-400 text-sm font-bold">{stats.rivalVillages}</p>
+              <p className="text-[9px] text-parchment-dark">Rivales</p>
+            </div>
+            <div>
+              <p className="font-display text-blue-300 text-sm font-bold">{stats.totalTroops}</p>
+              <p className="text-[9px] text-parchment-dark">Tropas</p>
+            </div>
+            <div>
+              <p className="font-display text-stone-400 text-sm font-bold">{stats.totalBattles}</p>
+              <p className="text-[9px] text-parchment-dark">Batallas</p>
+            </div>
+          </div>
 
           {/* Hero mini-panel */}
           {mapData.hero && (
@@ -390,6 +501,35 @@ export default function GamePage({ params }: { params: Promise<{ id: string }> }
                 <span>⭐ {mapData.nobilityXp} prestigio</span>
                 {nextNd && <span className="text-parchment-dark">→ {nextNd.labelEs}: {nextNd.minPrestige - mapData.nobilityXp} más</span>}
               </div>
+            </div>
+          )}
+
+          {/* ── RECENT EVENTS STRIP ─────────────────────────── */}
+          {mapData.recentEvents && mapData.recentEvents.length > 0 && (
+            <div className="px-3 py-2 border-b border-bronze/50">
+              <div className="flex items-center justify-between mb-1.5">
+                <span className="font-display text-gold-bright text-xs uppercase tracking-wider">Últimos sucesos</span>
+                <button
+                  onClick={() => setShowEvents(!showEvents)}
+                  className="text-[10px] text-parchment-aged hover:underline"
+                >
+                  {showEvents ? "Ocultar ▲" : "Ver todos ▼"}
+                </button>
+              </div>
+              <div className="space-y-1">
+                {mapData.recentEvents.slice(0, showEvents ? 5 : 2).map(ev => (
+                  <div key={ev.id} className={`text-[10px] flex items-start gap-1.5 p-1.5 rounded ${!ev.isRead ? "bg-amber-950/30 border border-amber-800/30" : "opacity-60"}`}>
+                    <span className="text-xs flex-shrink-0">{EVENT_ICONS[ev.type] ?? "📜"}</span>
+                    <div className="min-w-0">
+                      <p className="text-parchment font-semibold truncate">{ev.title}</p>
+                      <p className="text-parchment-dark leading-tight line-clamp-2">{ev.description}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <Link href={`/game/${id}/events`} className="block text-center text-[10px] text-parchment-aged hover:text-gold-pale mt-1.5 italic underline">
+                Ver crónica completa →
+              </Link>
             </div>
           )}
 
@@ -434,6 +574,17 @@ export default function GamePage({ params }: { params: Promise<{ id: string }> }
                       🏰 Gobernar aldea
                     </Link>
                   )}
+
+                  {/* SPY MISSION button */}
+                  {spyEligibleArmy && (
+                    <button
+                      onClick={() => spyMission(spyEligibleArmy.id, selected.village!.id)}
+                      disabled={spyLoading}
+                      className="w-full mt-1 text-xs px-3 py-1.5 rounded bg-purple-900/60 hover:bg-purple-800 border border-purple-700/60 text-purple-200 disabled:opacity-50 font-display"
+                    >
+                      {spyLoading ? "⏳ Infiltrando…" : "🕵 Misión de espionaje"}
+                    </button>
+                  )}
                 </div>
               )}
 
@@ -456,7 +607,7 @@ export default function GamePage({ params }: { params: Promise<{ id: string }> }
                         <div className="flex items-center justify-between mb-1">
                           <p className={`font-display text-xs ${a.owner === "PLAYER" ? "text-amber-300" : "text-red-300"}`}>
                             {a.owner === "PLAYER" ? "⚔ Tu hueste" : "☠ Enemigo"}
-                            {totalTroops > 0 && <span className="text-parchment-dark ml-1">({totalTroops} unidades)</span>}
+                            {totalTroops > 0 && <span className="text-parchment-dark ml-1">({totalTroops})</span>}
                           </p>
                           <span className="text-[10px] text-parchment-aged">{a.faction}</span>
                         </div>
@@ -467,18 +618,16 @@ export default function GamePage({ params }: { params: Promise<{ id: string }> }
                             <div className={`h-full rounded-full ${a.stamina > 60 ? "bg-emerald-500" : a.stamina > 30 ? "bg-yellow-500" : "bg-red-500"}`}
                               style={{ width: `${a.stamina}%` }} />
                           </div>
-                          <span className="text-[10px] text-parchment-dark whitespace-nowrap">{a.stamina}% stamina</span>
+                          <span className="text-[10px] text-parchment-dark whitespace-nowrap">{a.stamina}%</span>
                         </div>
 
-                        {/* Status */}
                         <p className="text-[10px] text-parchment-aged italic mb-1">
-                          {isMovingNow ? `🚶 Marchando — llega en ${timeLeftStr(a.arrivesAt)}`
+                          {isMovingNow ? `🚶 Marchando — ${timeLeftStr(a.arrivesAt)}`
                             : a.isResting ? "💤 Descansando"
                             : a.isForaging ? "🌾 Forrajeando"
                             : "⛺ Acampada"}
                         </p>
 
-                        {/* Troop breakdown */}
                         {a.troops.length > 0 && (
                           <div className="space-y-0.5 mb-2">
                             {a.troops.map(t => (
@@ -490,7 +639,6 @@ export default function GamePage({ params }: { params: Promise<{ id: string }> }
                           </div>
                         )}
 
-                        {/* Player army actions */}
                         {a.owner === "PLAYER" && !a.isMoving && (
                           <div className="flex gap-1 flex-wrap">
                             <button onClick={() => { setSelectedArmyId(a.id); setMoveMode(true); }}
@@ -511,7 +659,6 @@ export default function GamePage({ params }: { params: Promise<{ id: string }> }
                     );
                   })}
 
-                  {/* Merge button: 2+ player armies on same tile */}
                   {playerArmiesOnSelected.length >= 2 && (
                     <button
                       onClick={() => mergeArmies(playerArmiesOnSelected[1].id, playerArmiesOnSelected[0].id)}
@@ -522,8 +669,8 @@ export default function GamePage({ params }: { params: Promise<{ id: string }> }
                 </div>
               )}
 
-              {armiesOnSelectedTile.length === 0 && (
-                <p className="text-xs text-parchment-dark italic text-center py-2">Sin ejércitos en esta casilla.</p>
+              {armiesOnSelectedTile.length === 0 && !selected.village && (
+                <p className="text-xs text-parchment-dark italic text-center py-2">Sin ejércitos ni asentamientos.</p>
               )}
             </div>
           ) : (
@@ -532,7 +679,6 @@ export default function GamePage({ params }: { params: Promise<{ id: string }> }
                 Haz clic en una casilla<br />para explorar sus secretos.
               </p>
 
-              {/* Moving armies countdown */}
               {mapData.armies.filter(a => a.owner === "PLAYER" && a.isMoving).length > 0 && (
                 <div className="space-y-2">
                   <p className="text-xs text-gold-bright font-display uppercase tracking-wider border-t border-bronze/40 pt-2">
