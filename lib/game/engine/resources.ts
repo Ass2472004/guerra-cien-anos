@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/db";
+import { NOBILITY, computeTitle } from "../constants/nobility";
 
 const STRAW_RATIO = 0.4; // grano -> paja bonus ratio
 const ADOBE_PER_STRAW = 0.5; // straw auto-converts to adobe slowly
@@ -9,6 +10,7 @@ export async function processTick(gameId: string) {
     include: {
       villages: { include: { buildings: true } },
       armies: { include: { troops: true } },
+      hero: true,
     },
   });
 
@@ -16,12 +18,20 @@ export async function processTick(gameId: string) {
   const secondsSinceLastTick = (now.getTime() - game.lastTick.getTime()) / 1000;
   if (secondsSinceLastTick < 5) return; // throttle: 5 second min
 
+  // Nobility production bonus
+  const playerVillageCount = game.villages.filter(v => v.owner === "PLAYER").length;
+  const title = computeTitle(playerVillageCount, game.nobilityXp);
+  const nobilityPct = NOBILITY[title].productionBonus;
+
   const updates: Promise<unknown>[] = [];
 
   for (const village of game.villages) {
     if (village.owner !== "PLAYER" && village.owner !== "AI_RIVAL") continue; // neutral villages don't produce
 
-    const heroBonus = 1; // will be modified by hero resourceBonus attribute
+    // Hero resource bonus (% attribute) + nobility bonus
+    const heroResourcePct = (village.owner === "PLAYER" && game.hero) ? game.hero.resourceBonus : 0;
+    const totalPct = (village.owner === "PLAYER") ? (nobilityPct + heroResourcePct) : 0;
+    const heroBonus = 1 + totalPct / 100;
     const wood  = Math.min(village.wood  + village.woodRate  * heroBonus, village.warehouseCap);
     const stone = Math.min(village.stone + village.stoneRate * heroBonus, village.warehouseCap);
     const iron  = Math.min(village.iron  + village.ironRate  * heroBonus, village.warehouseCap);

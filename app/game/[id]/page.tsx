@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState, useCallback, use } from "react";
 import Link from "next/link";
+import { NOBILITY, NOBILITY_ORDER, type NobilityTitle } from "@/lib/game/constants/nobility";
 
 type TileVisibility = "HIDDEN" | "FOG" | "VISIBLE";
 type TileType = "PLAIN" | "VILLAGE" | "OASIS_FOREST" | "OASIS_STONE" | "OASIS_IRON"
@@ -19,6 +20,7 @@ interface ArmyOnMap {
 }
 interface MapData {
   width: number; height: number; faction: string; tick: number;
+  nobilityTitle: string; nobilityXp: number;
   tiles: Tile[]; armies: ArmyOnMap[];
   hero: { tileId: string | null; isOnAdventure: boolean; isAlive: boolean; hp: number; maxHp: number; level: number } | null;
 }
@@ -132,7 +134,16 @@ export default function GamePage({ params }: { params: Promise<{ id: string }> }
         <div className="flex items-center gap-2 text-sm">
           <span className="hidden md:inline text-parchment-aged">Año {mapData.tick}</span>
           <span className="hidden md:inline text-gold-pale">Reino: <strong>{mapData.faction}</strong></span>
+          {(() => {
+            const nd = NOBILITY[mapData.nobilityTitle as NobilityTitle];
+            return nd ? (
+              <span className="hidden md:inline font-display text-gold-bright border border-gold px-2 py-0.5 rounded-sm text-xs">
+                {nd.icon} {nd.labelEs}
+              </span>
+            ) : null;
+          })()}
           <Link href={`/game/${id}/hero`} className="btn-medieval text-xs">⚔ Héroe</Link>
+          <Link href={`/game/${id}/nobility`} className="btn-medieval text-xs">👑 Nobleza</Link>
           <Link href={`/game/${id}/battles`} className="btn-blood text-xs">📜 Crónicas</Link>
           <button onClick={manualTick} disabled={ticking} className="btn-medieval text-xs">
             {ticking ? "⏳" : "⏩ Avanzar"}
@@ -277,6 +288,42 @@ export default function GamePage({ params }: { params: Promise<{ id: string }> }
           {!selected && (
             <p className="text-parchment-aged text-sm italic text-center px-2 py-4">Haz clic en una casilla visible para conocer sus secretos.</p>
           )}
+
+          {/* Nobility Panel */}
+          {(() => {
+            const titleKey = mapData.nobilityTitle as NobilityTitle;
+            const nd = NOBILITY[titleKey];
+            if (!nd) return null;
+            const nextIdx = NOBILITY_ORDER.indexOf(titleKey) + 1;
+            const next = nextIdx < NOBILITY_ORDER.length ? NOBILITY[NOBILITY_ORDER[nextIdx]] : null;
+            return (
+              <div className="stat-box space-y-2 border border-gold/40">
+                <div className="flex items-center gap-2">
+                  <span className="text-xl">{nd.icon}</span>
+                  <div>
+                    <p className="font-display text-gold-bright text-sm">{nd.labelEs}</p>
+                    <p className="text-xs text-parchment-aged italic">{nd.label}</p>
+                  </div>
+                </div>
+                <p className="text-xs text-parchment-dark italic leading-relaxed">{nd.description}</p>
+                <div className="grid grid-cols-2 gap-1 text-xs">
+                  {nd.productionBonus > 0 && <span className="text-emerald-400">+{nd.productionBonus}% producción</span>}
+                  {nd.attackBonus > 0 && <span className="text-blood-bright">+{nd.attackBonus}% ataque</span>}
+                  {nd.defenseBonus > 0 && <span className="text-blue-300">+{nd.defenseBonus}% defensa</span>}
+                  {nd.recruitBonus > 0 && <span className="text-amber-300">−{nd.recruitBonus}% reclutamiento</span>}
+                </div>
+                <div className="pt-1 border-t border-bronze/50">
+                  <p className="text-xs text-parchment-aged">Prestigio: <span className="text-gold-bright font-bold">{mapData.nobilityXp}</span></p>
+                  {next && (
+                    <p className="text-xs text-parchment-dark italic">
+                      Siguiente: {next.icon} {next.labelEs} ({next.minVillages} aldeas · {next.minPrestige} prestigio)
+                    </p>
+                  )}
+                  {!next && <p className="text-xs text-gold-bright italic">¡Máximo rango alcanzado!</p>}
+                </div>
+              </div>
+            );
+          })()}
 
           <div className="pt-2 border-t border-bronze">
             <h2 className="text-gold-bright font-display text-xs uppercase tracking-wider mb-1">Leyenda</h2>

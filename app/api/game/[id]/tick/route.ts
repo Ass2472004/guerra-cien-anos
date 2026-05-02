@@ -7,6 +7,7 @@ import { processNeutralAI, processRivalAI } from "@/lib/game/engine/ai";
 import { resolveTileEncounters } from "@/lib/game/engine/battle";
 import { updateFogOfWar } from "@/lib/game/engine/fog";
 import { prisma } from "@/lib/db";
+import { updateNobilityTitle } from "@/lib/game/engine/nobility";
 
 export async function POST(_req: Request, { params }: { params: Promise<{ id: string }> }) {
   const session = await getServerSession(authOptions);
@@ -45,6 +46,9 @@ export async function POST(_req: Request, { params }: { params: Promise<{ id: st
     where: { gameId: id, isAlive: false, revivesAt: { lte: new Date() } },
     data: { isAlive: true, hp: 100, revivesAt: null },
   });
+
+  // 9) Nobility title update
+  await updateNobilityTitle(id);
 
   return NextResponse.json({ ok: true, tick: game.tick + 1, battles: reports.length });
 }

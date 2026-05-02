@@ -1,6 +1,9 @@
 import { prisma } from "@/lib/db";
 import { TROOPS } from "../constants/troops";
 import { resolveCombat, heroXpFromBattle, checkLevelUp } from "./combat";
+import { NOBILITY, computeTitle } from "../constants/nobility";
+import { addPrestige } from "./nobility";
+import { PRESTIGE_BATTLE_WON, PRESTIGE_BATTLE_DEFENDED, PRESTIGE_VILLAGE_CAPTURED } from "../constants/nobility";
 
 // After army movement, resolve any combat encounters at tiles where
 // player and rival armies (or rival armies on player villages) coincide.
@@ -61,9 +64,15 @@ export async function resolveTileEncounters(gameId: string) {
     const wallBonus = (tile.village && tile.village.owner === (isAttackerPlayer ? "AI_RIVAL" : "PLAYER"))
       ? tile.village.wallLevel * 7 : 0;
 
+    // Nobility combat bonuses for player side
+    const game = await prisma.game.findUniqueOrThrow({ where: { id: gameId }, select: { nobilityTitle: true, nobilityXp: true } });
+    const nobilityDef = NOBILITY[game.nobilityTitle as keyof typeof NOBILITY];
+    const playerAtkBonus = (isAttackerPlayer ? nobilityDef.attackBonus : 0) + (hero ? hero.attackBonus : 0);
+    const playerDefBonus = (!isAttackerPlayer ? nobilityDef.defenseBonus : 0) + (hero ? hero.defenseBonus : 0);
+
     const result = resolveCombat(
-      { army: { id: "atk", troops: attackerTroops as any } as any, heroAbility },
-      { army: { id: "def", troops: defenderTroops as any } as any, wallBonus },
+      { army: { id: "atk", troops: attackerTroops as any } as any, heroAbility, attackBonusPct: isAttackerPlayer ? playerAtkBonus : 0 },
+      { army: { id: "def", troops: defenderTroops as any } as any, wallBonus, defenseBonusPct: isAttackerPlayer ? 0 : playerDefBonus },
     );
 
     // Apply losses to actual armies (proportionally)
@@ -140,8 +149,14 @@ export async function resolveTileEncounters(gameId: string) {
           where: { id: tile.village.id },
           data: { owner: newOwner, loyalty: 30 },
         });
+        // Player earns prestige for capturing a village
+        if (isAttackerPlayer) await addPrestige(gameId, PRESTIGE_VILLAGE_CAPTURED);
       }
     }
+
+    // Award battle prestige to player
+    if (isAttackerPlayer && result.attackerWins) await addPrestige(gameId, PRESTIGE_BATTLE_WON);
+    if (!isAttackerPlayer && !result.attackerWins) await addPrestige(gameId, PRESTIGE_BATTLE_DEFENDED);
 
     // Save battle report
     const battle = await prisma.battle.create({

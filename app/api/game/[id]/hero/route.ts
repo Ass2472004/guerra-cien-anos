@@ -3,6 +3,8 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { HEROES, ITEMS } from "@/lib/game/constants/heroes";
+import { addPrestige, updateNobilityTitle } from "@/lib/game/engine/nobility";
+import { PRESTIGE_ADVENTURE } from "@/lib/game/constants/nobility";
 
 export async function GET(_req: Request, { params }: { params: Promise<{ id: string }> }) {
   const session = await getServerSession(authOptions);
@@ -130,6 +132,10 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
         });
       }
     }
+
+    // Award prestige for completing adventure
+    await addPrestige(id, PRESTIGE_ADVENTURE);
+    await updateNobilityTitle(id);
 
     return NextResponse.json({ ok: true, xpReward, item: rewardItem });
   }

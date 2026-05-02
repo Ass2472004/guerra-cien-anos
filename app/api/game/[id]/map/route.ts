@@ -34,6 +34,8 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
     height: game.mapHeight,
     faction: game.faction,
     tick: game.tick,
+    nobilityTitle: game.nobilityTitle,
+    nobilityXp: game.nobilityXp,
     tiles: game.tiles.map(t => ({
       id: t.id, x: t.x, y: t.y,
       type: t.type,

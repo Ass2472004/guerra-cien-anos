@@ -10,6 +10,8 @@ interface CombatArmy {
   heroAbility?: string | null;
   wallBonus?: number;
   chapelBonus?: number;
+  attackBonusPct?: number;   // % extra attack (nobility + hero)
+  defenseBonusPct?: number;  // % extra defense (nobility + hero)
 }
 
 export interface CombatResult {
@@ -36,7 +38,9 @@ function totalAttack(army: CombatArmy): number {
     }
     attack += unitAttack;
   }
-  return Math.round(attack);
+  // Nobility + hero attack bonus
+  const attackMultiplier = 1 + (army.attackBonusPct ?? 0) / 100;
+  return Math.round(attack * attackMultiplier);
 }
 
 function totalDefense(army: CombatArmy): number {
@@ -57,8 +61,10 @@ function totalDefense(army: CombatArmy): number {
   const wallMultiplier = 1 + (army.wallBonus ?? 0) / 100;
   // Chapel bonus
   const chapelMultiplier = 1 + (army.chapelBonus ?? 0) / 100;
+  // Nobility + hero defense bonus
+  const nobilityMultiplier = 1 + (army.defenseBonusPct ?? 0) / 100;
 
-  return Math.round(defense * wallMultiplier * chapelMultiplier);
+  return Math.round(defense * wallMultiplier * chapelMultiplier * nobilityMultiplier);
 }
 
 export function resolveCombat(
