@@ -8,11 +8,21 @@ export async function POST(req: Request) {
   const session = await getServerSession(authOptions);
   if (!session?.user?.id) return NextResponse.json({ error: "No autenticado" }, { status: 401 });
 
-  const { faction } = await req.json() as { faction: Faction };
+  const { faction, playerName, houseName } = await req.json() as {
+    faction: Faction;
+    playerName?: string;
+    houseName?: string;
+  };
+
   if (!["ENGLAND", "FRANCE", "SPAIN"].includes(faction)) {
     return NextResponse.json({ error: "Faccion invalida" }, { status: 400 });
   }
 
-  const game = await createNewGame((session.user as any).id, faction);
+  const game = await createNewGame(
+    (session.user as any).id,
+    faction,
+    playerName?.trim() || "",
+    houseName?.trim() || "",
+  );
   return NextResponse.json({ gameId: game.id });
 }

@@ -39,15 +39,19 @@ const FACTIONS = [
 export default function SelectFactionPage() {
   const router = useRouter();
   const [selected, setSelected] = useState<"ENGLAND" | "FRANCE" | "SPAIN" | null>(null);
+  const [playerName, setPlayerName] = useState("");
+  const [houseName, setHouseName] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
   async function startGame() {
     if (!selected) return;
+    if (!playerName.trim()) { setError("Escribe el nombre de tu noble"); return; }
+    if (!houseName.trim()) { setError("Escribe el nombre de tu casa"); return; }
     setLoading(true); setError("");
     const res = await fetch("/api/game/create", {
       method: "POST", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ faction: selected }),
+      body: JSON.stringify({ faction: selected, playerName: playerName.trim(), houseName: houseName.trim() }),
     });
     setLoading(false);
     if (!res.ok) { setError("Error al crear la partida"); return; }
@@ -64,6 +68,40 @@ export default function SelectFactionPage() {
           <p className="text-parchment-aged italic">Tu juramento de hoy decide el destino de Europa.</p>
         </div>
 
+        {/* Noble identity */}
+        <div className="parchment p-6 max-w-2xl mx-auto">
+          <h2 className="font-display text-lg text-ink mb-4 flex items-center gap-2">
+            <span>👑</span> Tu identidad noble
+          </h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm text-ink-soft mb-1 font-display">Nombre del noble</label>
+              <input
+                type="text"
+                value={playerName}
+                onChange={e => setPlayerName(e.target.value)}
+                placeholder="Ej: Eduardo de Woodstock"
+                className="w-full"
+                maxLength={40}
+              />
+              <p className="text-[10px] text-ink-soft mt-1 italic">Así te conocerán tus súbditos y enemigos</p>
+            </div>
+            <div>
+              <label className="block text-sm text-ink-soft mb-1 font-display">Nombre de la casa</label>
+              <input
+                type="text"
+                value={houseName}
+                onChange={e => setHouseName(e.target.value)}
+                placeholder="Ej: Casa Plantagenet"
+                className="w-full"
+                maxLength={40}
+              />
+              <p className="text-[10px] text-ink-soft mt-1 italic">Tu linaje, tu legado</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Faction cards */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
           {FACTIONS.map(f => {
             const hero = HEROES[f.key];
@@ -118,7 +156,11 @@ export default function SelectFactionPage() {
         {error && <p className="text-blood-bright text-center italic">{error}</p>}
 
         <div className="flex justify-center">
-          <button onClick={startGame} disabled={!selected || loading} className="btn-medieval text-lg px-12 py-4">
+          <button
+            onClick={startGame}
+            disabled={!selected || loading || !playerName.trim() || !houseName.trim()}
+            className="btn-medieval text-lg px-12 py-4"
+          >
             {loading ? "Forjando el reino…" : "⚔ Iniciar campaña"}
           </button>
         </div>

@@ -76,6 +76,10 @@ model Game {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  // Noble identity
+  playerName    String  @default("")
+  houseName     String  @default("")
+
   // Nobility system: LORD | BARON | COUNT | DUKE | KING
   nobilityTitle String @default("LORD")
   nobilityXp    Int    @default(0)  // prestige points from battles/villages

@@ -1,0 +1,3 @@
+-- AlterTable
+ALTER TABLE "Game" ADD COLUMN IF NOT EXISTS "playerName" TEXT NOT NULL DEFAULT '',
+                   ADD COLUMN IF NOT EXISTS "houseName"  TEXT NOT NULL DEFAULT '';

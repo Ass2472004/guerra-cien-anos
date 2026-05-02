@@ -8,11 +8,16 @@ const MAP_W = 20;
 const MAP_H = 20;
 const STARTING_VISION = 3;
 
-export async function createNewGame(userId: string, faction: Faction) {
+export async function createNewGame(
+  userId: string,
+  faction: Faction,
+  playerName = "",
+  houseName = "",
+) {
   const { tiles, villages } = generateMap(MAP_W, MAP_H, faction);
 
   const game = await prisma.game.create({
-    data: { userId, faction, mapWidth: MAP_W, mapHeight: MAP_H },
+    data: { userId, faction, mapWidth: MAP_W, mapHeight: MAP_H, playerName, houseName },
   });
 
   // Create all tiles
