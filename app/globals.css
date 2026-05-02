@@ -149,6 +149,26 @@ input:focus, select:focus, textarea:focus {
   outline-offset: 1px;
 }
 
+/* Blood dark variant */
+.bg-blood-dark { background: var(--blood); }
+
+/* Fade-in animation for toasts */
+@keyframes fadeInSlide {
+  from { opacity: 0; transform: translateX(24px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+.animate-fade-in {
+  animation: fadeInSlide 0.25s ease-out forwards;
+}
+
+/* line-clamp helper */
+.line-clamp-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
 /* Scroll bar más medieval */
 ::-webkit-scrollbar { width: 10px; height: 10px; }
 ::-webkit-scrollbar-track { background: var(--wood-dark); }

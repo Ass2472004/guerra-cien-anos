@@ -21,13 +21,30 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
       },
       armies: {
         where: { tileId: { not: null } },
-        select: { id: true, tileId: true, owner: true, faction: true, stamina: true, isMoving: true, isResting: true, isForaging: true },
+        select: {
+          id: true, tileId: true, owner: true, faction: true,
+          stamina: true, isMoving: true, isResting: true, isForaging: true,
+          arrivesAt: true, carriedGrain: true,
+          troops: { select: { type: true, count: true, faction: true } },
+        },
       },
       hero: { select: { tileId: true, isOnAdventure: true, isAlive: true, hp: true, maxHp: true, level: true } },
     },
   });
 
   if (!game) return NextResponse.json({ error: "Partida no encontrada" }, { status: 404 });
+
+  // Player village resources summary (first player village)
+  const playerVillage = await prisma.village.findFirst({
+    where: { gameId: id, owner: "PLAYER" },
+    select: {
+      id: true, name: true,
+      wood: true, stone: true, iron: true, grain: true,
+      straw: true, adobe: true, silver: true, gold: true,
+      woodRate: true, stoneRate: true, ironRate: true, grainRate: true,
+      warehouseCap: true, granaryCap: true,
+    },
+  });
 
   return NextResponse.json({
     width: game.mapWidth,
@@ -46,5 +63,6 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
     })),
     armies: game.armies,
     hero: game.hero,
+    playerResources: playerVillage,
   });
 }
