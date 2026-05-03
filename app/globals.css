@@ -169,6 +169,54 @@ input:focus, select:focus, textarea:focus {
   overflow: hidden;
 }
 
+/* ── Travian-style panels ────────────────────────────────────────── */
+.trav-panel {
+  background: linear-gradient(180deg, #2a1a0c 0%, #1a0f07 100%);
+  border: 1px solid #8b5a2b;
+  border-radius: 3px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.5), inset 0 0 10px rgba(0,0,0,0.25);
+}
+
+.trav-panel-header {
+  background: linear-gradient(180deg, #3d2510 0%, #2a1a0c 100%);
+  border-bottom: 1px solid #8b5a2b;
+  padding: 0.3rem 0.65rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-family: var(--font-cinzel), serif;
+  color: var(--gold-bright);
+  font-size: 0.65rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+/* Nav icon button (top bar) */
+.nav-icon-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  padding: 0 0.7rem;
+  border-right: 1px solid rgba(139,90,43,0.35);
+  color: var(--parchment-dark);
+  font-size: 0.6rem;
+  font-family: var(--font-cinzel), serif;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  transition: background 0.15s, color 0.15s;
+  cursor: pointer;
+  text-decoration: none;
+  position: relative;
+  gap: 0.15rem;
+  flex-shrink: 0;
+}
+.nav-icon-btn:hover, .nav-icon-btn.active {
+  background: rgba(184,134,47,0.13);
+  color: var(--gold-bright);
+}
+
 /* Scroll bar más medieval */
 ::-webkit-scrollbar { width: 10px; height: 10px; }
 ::-webkit-scrollbar-track { background: var(--wood-dark); }
