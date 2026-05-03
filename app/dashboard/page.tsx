@@ -38,6 +38,14 @@ export default function DashboardPage() {
     fetch("/api/dashboard").then(r => r.json()).then(setData);
   }, []);
 
+  async function cleanupOldGames() {
+    if (!confirm("¿Borrar todas las partidas antiguas (Inglaterra/Francia/Castilla)? Esta acción no se puede deshacer.")) return;
+    const res = await fetch("/api/admin/cleanup-old-games", { method: "POST" });
+    const d = await res.json();
+    alert(`${d.deleted ?? 0} partida(s) antigua(s) borrada(s).`);
+    fetch("/api/dashboard").then(r => r.json()).then(setData);
+  }
+
   if (!data) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -48,6 +56,7 @@ export default function DashboardPage() {
 
   const activeGames = data.games.filter(g => g.status === "PLAYING");
   const finishedGames = data.games.filter(g => g.status !== "PLAYING");
+  const hasOldFaction = data.games.some(g => ["ENGLAND", "FRANCE", "SPAIN"].includes(g.faction));
 
   return (
     <div className="min-h-screen">
@@ -66,6 +75,20 @@ export default function DashboardPage() {
       </header>
 
       <div className="max-w-5xl mx-auto px-4 py-8 space-y-8">
+
+        {/* Migration warning for old games */}
+        {hasOldFaction && (
+          <div className="parchment border-2 border-blood/60 p-4 flex items-center gap-4 flex-wrap">
+            <div className="text-3xl flex-shrink-0">⚠</div>
+            <div className="flex-1 min-w-0">
+              <p className="font-display text-ink text-sm">El mundo ha cambiado: Nahkor reemplaza a las naciones europeas</p>
+              <p className="text-ink-soft text-xs italic">Tienes partidas con facciones antiguas (Inglaterra/Francia/Castilla) que no son compatibles con el nuevo mundo Nahkor. Bórralas para empezar nuevas crónicas.</p>
+            </div>
+            <button onClick={cleanupOldGames} className="btn-blood text-sm flex-shrink-0">
+              🗑 Borrar partidas antiguas
+            </button>
+          </div>
+        )}
 
         {/* Active Games */}
         <section className="space-y-4">

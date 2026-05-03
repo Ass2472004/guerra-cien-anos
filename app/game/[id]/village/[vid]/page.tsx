@@ -4,6 +4,7 @@ import Link from "next/link";
 import { BUILDINGS } from "@/lib/game/constants/buildings";
 import { TROOPS, TROOPS_BY_FACTION } from "@/lib/game/constants/troops";
 import type { Faction } from "@/lib/game/constants/troops";
+import { TroopPortrait } from "@/components/Portrait";
 
 interface VillageData {
   id: string; name: string; owner: string; faction: string | null;
@@ -305,9 +306,8 @@ export default function VillagePage({ params }: { params: Promise<{ id: string; 
               return (
                 <div key={key} className="parchment p-3">
                   <div className="flex gap-3 items-start">
-                    <img src={`/troops/${key}.png`} alt={troop.name}
-                      onError={e => { (e.target as HTMLImageElement).style.display = "none"; }}
-                      className="w-20 h-20 object-cover rounded-sm border-2 border-bronze flex-shrink-0" />
+                    <div className="flex-shrink-0">
+                      <TroopPortrait troopType={key} size="lg" /></div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-start justify-between gap-2 mb-1">
                         <div>

@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState, use } from "react";
 import Link from "next/link";
+import { HeroPortrait } from "@/components/Portrait";
 
 interface HeroData {
   id: string; name: string; faction: string;
@@ -12,7 +13,7 @@ interface HeroData {
   armyId: string | null;
   equipment: Array<{ id: string; slot: string; item: string; tier: number; bonusJson: string }>;
 }
-interface HeroDef { name: string; title: string; ability: string; abilityDesc: string; historical: string; }
+interface HeroDef { name: string; title: string; ability: string; abilityDesc: string; lore?: string; historical?: string; }
 interface AdventureDef {
   key: string; name: string; icon: string; desc: string;
   durationMin: number; xpMin: number; xpMax: number; itemChance: number; silverReward: number;
@@ -86,7 +87,10 @@ export default function HeroPage({ params }: { params: Promise<{ id: string }> }
     </div>
   );
 
-  const { hero, def, adventureTypes } = data;
+  const { hero, def: rawDef, adventureTypes } = data;
+  // Fallback if hero has stale faction or def is missing
+  const def: HeroDef = rawDef ?? { name: hero.name ?? "Héroe", title: "", ability: "", abilityDesc: "" };
+  const heroLore = def.lore ?? def.historical ?? "Un héroe del mundo Nahkor.";
   const totalAllocated = Object.values(allocation).reduce((a, b) => a + b, 0);
   const adventureReady = hero.isOnAdventure && hero.adventureEndsAt && new Date(hero.adventureEndsAt) <= new Date();
   const xpPct = Math.min(100, (hero.xp / hero.xpNext) * 100);
@@ -107,17 +111,22 @@ export default function HeroPage({ params }: { params: Promise<{ id: string }> }
 
         {/* Hero card */}
         <div className="parchment p-5 flex gap-5">
-          <img
-            src={`/heroes/${hero.faction.toLowerCase()}.png`}
-            onError={e => { (e.target as HTMLImageElement).style.display = "none"; }}
-            alt={def.name}
-            className="w-32 h-32 object-cover rounded-sm border-2 border-bronze flex-shrink-0"
-          />
+          <div className="flex-shrink-0">
+            <HeroPortrait
+              faction={hero.faction}
+              level={hero.level}
+              hp={hero.hp}
+              maxHp={hero.maxHp}
+              size="xl"
+              isAlive={hero.isAlive}
+              isOnAdventure={hero.isOnAdventure}
+            />
+          </div>
           <div className="flex-1 space-y-3">
-            <p className="text-ink-soft italic text-sm leading-relaxed">«{def.historical}»</p>
+            <p className="text-ink-soft italic text-sm leading-relaxed">«{heroLore}»</p>
             <div className="border-2 border-bronze p-3 bg-amber-100/40 rounded-sm">
-              <p className="text-ink font-display text-sm">⚜ {def.ability.replace(/_/g, " ")}</p>
-              <p className="text-ink-soft text-sm mt-1">{def.abilityDesc}</p>
+              <p className="text-ink font-display text-sm">⚜ {(def.ability || "Habilidad").replace(/_/g, " ")}</p>
+              <p className="text-ink-soft text-sm mt-1">{def.abilityDesc || "—"}</p>
             </div>
           </div>
         </div>
