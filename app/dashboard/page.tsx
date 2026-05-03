@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { NOBILITY } from "@/lib/game/constants/nobility";
 import type { NobilityTitle } from "@/lib/game/constants/nobility";
+import { FactionCrest } from "@/components/Portrait";
 
 interface GameCard {
   id: string; faction: string; status: string; tick: number;
@@ -95,14 +96,9 @@ export default function DashboardPage() {
                   {/* Top row */}
                   <div className="flex items-start justify-between">
                     <div className="flex items-center gap-3">
-                      <img
-                        src={`/factions/${game.faction.toLowerCase()}.png`}
-                        onError={e => { (e.target as HTMLImageElement).style.display = "none"; }}
-                        alt={fi.name}
-                        className="w-12 h-12 object-cover border-2 border-bronze rounded-sm flex-shrink-0"
-                      />
+                      <FactionCrest faction={game.faction} size="lg" />
                       <div>
-                        <p className={`font-display text-lg ${fi.color}`}>{fi.icon} {fi.name}</p>
+                        <p className={`font-display text-lg ${fi.color}`}>{fi.name}</p>
                         {nd && <p className="text-gold-pale text-xs">{nd.icon} {nd.labelEs} · {game.nobilityXp} prestigio</p>}
                       </div>
                     </div>
@@ -165,14 +161,9 @@ export default function DashboardPage() {
                 return (
                   <Link key={game.id} href={`/game/${game.id}/events`}
                     className="flex items-center gap-4 parchment-dark border border-bronze/30 p-3 rounded-sm hover:brightness-105 transition-all opacity-70 hover:opacity-100">
-                    <img
-                      src={`/factions/${game.faction.toLowerCase()}.png`}
-                      onError={e => { (e.target as HTMLImageElement).style.display = "none"; }}
-                      alt={fi.name}
-                      className="w-10 h-10 object-cover border border-bronze rounded-sm flex-shrink-0"
-                    />
+                    <FactionCrest faction={game.faction} size="md" />
                     <div className="flex-1 min-w-0">
-                      <p className="font-display text-parchment-aged text-sm">{fi.icon} {fi.name}</p>
+                      <p className="font-display text-parchment-aged text-sm">{fi.name}</p>
                       <p className="text-xs text-parchment-dark">{game.playerVillages} aldeas · {game.tick} años</p>
                     </div>
                     <GameStatusBadge status={game.status} />

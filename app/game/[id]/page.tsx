@@ -3,6 +3,8 @@ import { useEffect, useState, useCallback, use, useRef } from "react";
 import Link from "next/link";
 import { NOBILITY, NOBILITY_ORDER, type NobilityTitle } from "@/lib/game/constants/nobility";
 import { TROOPS } from "@/lib/game/constants/troops";
+import { TROOP_ICONS, FACTION_VISUALS } from "@/lib/game/constants/troopIcons";
+import { TroopPortrait, HeroPortrait, FactionCrest } from "@/components/Portrait";
 
 type TileVisibility = "HIDDEN" | "FOG" | "VISIBLE";
 type TileType = "PLAIN" | "VILLAGE" | "OASIS_FOREST" | "OASIS_STONE" | "OASIS_IRON"
@@ -249,6 +251,8 @@ export default function GamePage({ params }: { params: Promise<{ id: string }> }
   const stats = mapData.stats ?? { playerVillages: 0, rivalVillages: 0, totalBattles: 0, totalTroops: 0 };
   const unreadEvents = (mapData.recentEvents ?? []).filter(e => !e.isRead).length;
   const factionIcon = mapData.faction === "PORTADORES" ? "🌑" : mapData.faction === "IMPERIO" ? "👑" : "⚓";
+  const factionVis = FACTION_VISUALS[mapData.faction] ?? FACTION_VISUALS.PORTADORES;
+  void TROOP_ICONS;
 
   const spyEligibleArmy = selected?.village?.owner === "AI_RIVAL"
     ? playerArmiesOnSelected.find(a => a.troops.some(t => ["ESPÍA_OSCURO","ESPÍA_IMPERIAL","ESPÍA_COMERCIO","INFILTRADOR_SOMBRA"].includes(t.type)))
@@ -311,16 +315,33 @@ export default function GamePage({ params }: { params: Promise<{ id: string }> }
         className="flex items-stretch border-b-2 border-bronze flex-shrink-0"
         style={{ height: 52, background: "linear-gradient(180deg, #3d2510 0%, #1f140a 100%)" }}
       >
-        {/* Faction portrait */}
-        <div className="w-14 flex items-center justify-center border-r border-bronze/50 flex-shrink-0 relative bg-[#150d05]">
-          <div className="w-10 h-10 rounded-full border-2 border-gold/50 bg-stone-900 flex items-center justify-center text-xl leading-none">
-            {factionIcon}
+        {/* Faction portrait — decorated with conic ring */}
+        <div className="w-16 flex items-center justify-center border-r border-bronze/50 flex-shrink-0 relative bg-[#0d0703]">
+          <div
+            className="rounded-full p-[2px] relative"
+            style={{
+              background: `conic-gradient(from 45deg, ${factionVis.ring}, #d9a847, ${factionVis.ring}, #b8862f, ${factionVis.ring})`,
+              boxShadow: `0 0 10px ${factionVis.ring}66`,
+            }}
+          >
+            <div
+              className="w-10 h-10 rounded-full flex items-center justify-center text-xl leading-none"
+              style={{
+                background: factionVis.gradient,
+                boxShadow: "inset 0 -4px 8px rgba(0,0,0,0.6), inset 0 2px 4px rgba(255,255,255,0.1)",
+              }}
+            >
+              <span style={{ filter: "drop-shadow(0 1px 2px rgba(0,0,0,0.8))" }}>{factionIcon}</span>
+            </div>
+            {mapData.hero && (
+              <span
+                className="absolute -bottom-0.5 -right-0.5 bg-gradient-to-br from-amber-400 to-amber-700 text-stone-950 text-[9px] font-display font-extrabold rounded-full w-4 h-4 flex items-center justify-center leading-none border border-stone-900"
+                style={{ boxShadow: "0 1px 3px rgba(0,0,0,0.6)" }}
+              >
+                {mapData.hero.level}
+              </span>
+            )}
           </div>
-          {mapData.hero && (
-            <span className="absolute bottom-1 right-0.5 bg-gold text-ink text-[8px] font-display font-bold rounded-full w-4 h-4 flex items-center justify-center leading-none">
-              {mapData.hero.level}
-            </span>
-          )}
         </div>
 
         {/* Icon nav buttons */}
@@ -391,31 +412,48 @@ export default function GamePage({ params }: { params: Promise<{ id: string }> }
           className="flex items-center gap-1 px-2 py-1.5 flex-shrink-0 flex-wrap border-b border-bronze/40"
           style={{ background: "#150e06" }}
         >
-          {resources.map((r) => (
-            <div
-              key={r.label}
-              className="flex items-center gap-1.5 rounded px-2 py-1 flex-1 min-w-[80px] border border-bronze/25"
-              style={{ background: "#251508" }}
-            >
-              <span className="text-sm leading-none flex-shrink-0">{r.icon}</span>
-              <div className="flex-1 min-w-0">
-                <div className="flex items-baseline justify-between gap-1">
-                  <span className="font-display font-bold text-xs leading-none" style={{ color: r.color }}>
-                    {r.val}
-                  </span>
-                  {r.rate > 0 && (
-                    <span className="text-[9px] text-stone-600 leading-none whitespace-nowrap">+{r.rate}/h</span>
-                  )}
+          {resources.map((r) => {
+            const pct = Math.min(100, (r.val / r.cap) * 100);
+            const isFull = pct >= 95;
+            return (
+              <div
+                key={r.label}
+                className="res-cell flex items-center gap-1.5 flex-1 min-w-[88px]"
+                title={`${r.label}: ${r.val} / ${r.cap}${r.rate > 0 ? ` · +${r.rate}/h` : ""}`}
+              >
+                <div
+                  className="w-7 h-7 rounded flex items-center justify-center flex-shrink-0 text-base"
+                  style={{
+                    background: `radial-gradient(circle, ${r.color}33 0%, transparent 70%)`,
+                    border: `1px solid ${r.color}55`,
+                    filter: "drop-shadow(0 1px 2px rgba(0,0,0,0.6))",
+                  }}
+                >
+                  {r.icon}
                 </div>
-                <div className="h-1 bg-stone-900 rounded-full overflow-hidden mt-1">
-                  <div
-                    className="h-full rounded-full transition-all"
-                    style={{ width: `${Math.min(100, (r.val / r.cap) * 100)}%`, background: r.color, opacity: 0.6 }}
-                  />
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-baseline justify-between gap-1">
+                    <span className="font-display font-bold text-xs leading-none" style={{ color: r.color, textShadow: `0 0 6px ${r.color}55` }}>
+                      {r.val}
+                    </span>
+                    {r.rate > 0 && (
+                      <span className="text-[9px] text-stone-500 leading-none whitespace-nowrap">+{r.rate}/h</span>
+                    )}
+                  </div>
+                  <div className="h-1.5 bg-stone-950 rounded-full overflow-hidden mt-1 border border-stone-900/80">
+                    <div
+                      className={`h-full rounded-full transition-all ${isFull ? "animate-pulse" : ""}`}
+                      style={{
+                        width: `${pct}%`,
+                        background: `linear-gradient(90deg, ${r.color}88, ${r.color})`,
+                        boxShadow: `0 0 4px ${r.color}88`,
+                      }}
+                    />
+                  </div>
                 </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
           {pr && (
             <Link
               href={`/game/${id}/village/${pr.id}`}
@@ -534,17 +572,20 @@ export default function GamePage({ params }: { params: Promise<{ id: string }> }
         </aside>
 
         {/* ── MAP ─────────────────────────────────────────────────────── */}
-        <div className="flex-1 overflow-auto p-3 relative">
+        <div className="flex-1 overflow-auto p-3 relative map-canvas">
+          <div className="ambient-mist" />
 
           {/* Zoom controls */}
           <div className="absolute top-4 right-4 z-20 flex flex-col gap-1">
             <button
               onClick={() => setZoomIdx(Math.min(3, zoomIdx + 1) as ZoomIdx)}
-              className="w-7 h-7 bg-[#2c1d10] border border-bronze text-gold-bright font-bold rounded-sm text-sm hover:bg-wood"
+              className="w-8 h-8 border border-bronze text-gold-bright font-bold rounded-sm text-base hover:bg-wood transition-colors"
+              style={{ background: "linear-gradient(180deg, #3a2818, #1f140a)", boxShadow: "0 2px 6px rgba(0,0,0,0.6), inset 0 1px 0 rgba(217,168,71,0.15)" }}
             >+</button>
             <button
               onClick={() => setZoomIdx(Math.max(0, zoomIdx - 1) as ZoomIdx)}
-              className="w-7 h-7 bg-[#2c1d10] border border-bronze text-gold-bright font-bold rounded-sm text-sm hover:bg-wood"
+              className="w-8 h-8 border border-bronze text-gold-bright font-bold rounded-sm text-base hover:bg-wood transition-colors"
+              style={{ background: "linear-gradient(180deg, #3a2818, #1f140a)", boxShadow: "0 2px 6px rgba(0,0,0,0.6), inset 0 1px 0 rgba(217,168,71,0.15)" }}
             >−</button>
           </div>
 
@@ -630,30 +671,43 @@ export default function GamePage({ params }: { params: Promise<{ id: string }> }
           <div className="trav-panel">
             <div className="trav-panel-header">Comandante</div>
             <div className="p-3 space-y-2">
-              {nd && (
-                <div className="flex items-center gap-2">
-                  <span className="text-base">{nd.icon}</span>
-                  <div>
-                    <p className="font-display text-gold-bright text-xs">{nd.labelEs}</p>
-                    <p className="text-[9px] text-stone-500">⭐ {mapData.nobilityXp} prestigio</p>
-                  </div>
+              <div className="flex items-center gap-2.5">
+                <FactionCrest faction={mapData.faction} size="md" />
+                <div className="min-w-0 flex-1">
+                  {nd && (
+                    <>
+                      <p className={`font-display text-sm truncate ${factionVis.accent}`}>
+                        {nd.icon} {nd.labelEs}
+                      </p>
+                      <p className="text-[10px] text-stone-500">⭐ {mapData.nobilityXp} prestigio</p>
+                    </>
+                  )}
                 </div>
-              )}
+              </div>
               {nextNd && (
-                <p className="text-[9px] text-stone-600 italic">
-                  → {nextNd.labelEs} en {nextNd.minPrestige - mapData.nobilityXp} prestigio más
-                </p>
-              )}
-              {pr && (
-                <div className="border-t border-bronze/30 pt-2 space-y-0.5">
-                  <p className="font-display text-parchment text-xs">{pr.name}</p>
-                  <Link
-                    href={`/game/${id}/village/${pr.id}`}
-                    className="text-gold-bright text-[10px] hover:underline flex items-center gap-1"
-                  >
-                    🏰 Gobernar aldea →
-                  </Link>
+                <div className="space-y-1">
+                  <div className="h-1 bg-stone-900 rounded-full overflow-hidden border border-bronze/20">
+                    <div
+                      className="h-full bg-gradient-to-r from-amber-700 to-amber-400 rounded-full transition-all"
+                      style={{
+                        width: `${Math.min(100, (mapData.nobilityXp / nextNd.minPrestige) * 100)}%`,
+                      }}
+                    />
+                  </div>
+                  <p className="text-[9px] text-stone-600 italic">
+                    → {nextNd.labelEs} en {nextNd.minPrestige - mapData.nobilityXp} más
+                  </p>
                 </div>
+              )}
+              <div className="heraldic-divider" />
+              {pr && (
+                <Link
+                  href={`/game/${id}/village/${pr.id}`}
+                  className="block bg-amber-950/20 border border-amber-800/30 rounded p-2 hover:bg-amber-900/30 hover:border-amber-700/50 transition-colors"
+                >
+                  <p className="font-display text-parchment text-xs">🏰 {pr.name}</p>
+                  <p className="text-gold-bright text-[10px] mt-0.5">Gobernar aldea →</p>
+                </Link>
               )}
             </div>
           </div>
@@ -701,37 +755,32 @@ export default function GamePage({ params }: { params: Promise<{ id: string }> }
           {mapData.hero && (
             <div className="trav-panel">
               <div className="trav-panel-header">
-                <span>Héroe Nv.{mapData.hero.level}</span>
+                <span>⚔ Héroe</span>
                 <Link href={`/game/${id}/hero`} className="text-[9px] text-gold-bright hover:underline">
                   Gestionar →
                 </Link>
               </div>
-              <div className="p-3">
-                <div className="flex items-center gap-2.5">
-                  <div className="w-11 h-11 rounded border-2 border-gold/40 bg-stone-900 flex items-center justify-center text-xl flex-shrink-0">
-                    {mapData.faction === "PORTADORES" ? "🗡" : mapData.faction === "IMPERIO" ? "🐉" : "⚓"}
-                  </div>
-                  <div className="flex-1 space-y-1">
-                    <div className="flex items-center gap-1">
-                      <div className="flex-1 bg-stone-900 rounded-full h-2 border border-red-900/40 overflow-hidden">
-                        <div
-                          className="bg-blood-bright h-full rounded-full transition-all"
-                          style={{ width: `${(mapData.hero.hp / mapData.hero.maxHp) * 100}%` }}
-                        />
-                      </div>
-                      <span className="text-[9px] text-parchment-dark whitespace-nowrap">
-                        {mapData.hero.hp}/{mapData.hero.maxHp}
-                      </span>
-                    </div>
-                    <p className="text-[10px] text-stone-500">HP</p>
-                  </div>
+              <div className="p-3 space-y-2">
+                <HeroPortrait
+                  faction={mapData.faction}
+                  level={mapData.hero.level}
+                  hp={mapData.hero.hp}
+                  maxHp={mapData.hero.maxHp}
+                  size="lg"
+                  isAlive={mapData.hero.isAlive}
+                  isOnAdventure={mapData.hero.isOnAdventure}
+                />
+                <div className="flex items-center gap-2 flex-wrap">
+                  {mapData.hero.isOnAdventure && (
+                    <span className="stat-badge">🗺 En aventura</span>
+                  )}
+                  {!mapData.hero.isAlive && (
+                    <span className="stat-badge" style={{ borderColor: "var(--blood-bright)", color: "var(--blood-bright)" }}>💀 Caído</span>
+                  )}
+                  {mapData.hero.isAlive && !mapData.hero.isOnAdventure && (
+                    <span className="stat-badge">⚔ Listo</span>
+                  )}
                 </div>
-                {mapData.hero.isOnAdventure && (
-                  <p className="text-[10px] text-gold-bright italic mt-2">🗺 En aventura…</p>
-                )}
-                {!mapData.hero.isAlive && (
-                  <p className="text-[10px] text-blood-bright italic mt-2">💀 Caído — reviviendo…</p>
-                )}
               </div>
             </div>
           )}
@@ -845,11 +894,10 @@ export default function GamePage({ params }: { params: Promise<{ id: string }> }
                           </p>
 
                           {a.troops.length > 0 && (
-                            <div className="space-y-0.5 mb-2">
+                            <div className="grid grid-cols-3 gap-1.5 mb-2 p-1.5 bg-stone-950/40 rounded border border-bronze/15">
                               {a.troops.map(t => (
-                                <div key={t.type} className="flex justify-between text-[9px]">
-                                  <span className="text-stone-500">{TROOPS[t.type]?.name ?? t.type}</span>
-                                  <span className="text-parchment-aged font-bold">{t.count}</span>
+                                <div key={t.type} className="flex justify-center" title={`${TROOPS[t.type]?.name ?? t.type}: ${t.count}`}>
+                                  <TroopPortrait troopType={t.type} count={t.count} size="sm" />
                                 </div>
                               ))}
                             </div>

@@ -2,6 +2,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { HEROES } from "@/lib/game/constants/heroes";
+import { HeroPortrait, FactionCrest } from "@/components/Portrait";
 
 const FACTIONS = [
   {
@@ -141,7 +142,7 @@ export default function SelectFactionPage() {
               >
                 {/* Cabecera facción */}
                 <div className="flex items-start gap-3">
-                  <span className="text-4xl">{f.crest}</span>
+                  <FactionCrest faction={f.key} size="lg" />
                   <div className="flex-1">
                     <h2 className="font-display text-xl text-ink leading-tight">{f.name}</h2>
                     <p className={`text-xs font-display ${f.color}`}>{f.subtitle}</p>
@@ -169,12 +170,10 @@ export default function SelectFactionPage() {
                 </div>
 
                 {/* Héroe */}
-                <div className="border border-bronze/40 rounded p-3 flex gap-3 bg-black/10">
-                  <div className="w-14 h-14 rounded border border-bronze/40 bg-stone-900 flex items-center justify-center flex-shrink-0 text-2xl">
-                    {f.key === "PORTADORES" ? "🗡" : f.key === "IMPERIO" ? "🐉" : "⚓"}
-                  </div>
+                <div className="border border-bronze/40 rounded p-3 flex gap-3 bg-black/20">
+                  <HeroPortrait faction={f.key} size="lg" />
                   <div className="flex-1 min-w-0">
-                    <p className="font-display text-sm text-ink leading-tight truncate">{hero.name}</p>
+                    <p className="font-display text-sm text-ink leading-tight">{hero.name}</p>
                     <p className="text-[10px] italic text-ink-soft leading-tight">{hero.title}</p>
                     <p className="text-[10px] text-ink mt-1 leading-tight line-clamp-2">{hero.abilityDesc}</p>
                   </div>

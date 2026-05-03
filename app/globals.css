@@ -169,18 +169,48 @@ input:focus, select:focus, textarea:focus {
   overflow: hidden;
 }
 
-/* ── Travian-style panels ────────────────────────────────────────── */
+/* ── Travian-style panels (decoradas) ────────────────────────────── */
 .trav-panel {
-  background: linear-gradient(180deg, #2a1a0c 0%, #1a0f07 100%);
+  position: relative;
+  background:
+    radial-gradient(ellipse at top, rgba(184,134,47,0.06), transparent 60%),
+    linear-gradient(180deg, #2a1a0c 0%, #150d05 100%);
   border: 1px solid #8b5a2b;
-  border-radius: 3px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.5), inset 0 0 10px rgba(0,0,0,0.25);
+  border-radius: 4px;
+  box-shadow:
+    0 2px 12px rgba(0,0,0,0.6),
+    inset 0 0 20px rgba(0,0,0,0.35),
+    inset 0 1px 0 rgba(217,168,71,0.12);
+}
+
+/* Decorative corners */
+.trav-panel::before,
+.trav-panel::after {
+  content: "";
+  position: absolute;
+  width: 10px; height: 10px;
+  border-color: var(--gold);
+  border-style: solid;
+  pointer-events: none;
+  opacity: 0.6;
+}
+.trav-panel::before {
+  top: -1px; left: -1px;
+  border-width: 2px 0 0 2px;
+  border-top-left-radius: 4px;
+}
+.trav-panel::after {
+  bottom: -1px; right: -1px;
+  border-width: 0 2px 2px 0;
+  border-bottom-right-radius: 4px;
 }
 
 .trav-panel-header {
-  background: linear-gradient(180deg, #3d2510 0%, #2a1a0c 100%);
+  position: relative;
+  background:
+    linear-gradient(180deg, #4a2c14 0%, #2a1a0c 100%);
   border-bottom: 1px solid #8b5a2b;
-  padding: 0.3rem 0.65rem;
+  padding: 0.35rem 0.7rem;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -189,6 +219,159 @@ input:focus, select:focus, textarea:focus {
   font-size: 0.65rem;
   letter-spacing: 0.1em;
   text-transform: uppercase;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.8), 0 0 6px rgba(217,168,71,0.3);
+}
+.trav-panel-header::after {
+  content: "";
+  position: absolute;
+  bottom: -1px; left: 10%; right: 10%;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--gold-bright), transparent);
+  opacity: 0.5;
+}
+
+/* Resource cell — capsule with inner glow */
+.res-cell {
+  position: relative;
+  background:
+    radial-gradient(ellipse at top, rgba(217,168,71,0.08), transparent 70%),
+    linear-gradient(180deg, #251508 0%, #140b04 100%);
+  border: 1px solid rgba(139,90,43,0.35);
+  border-radius: 6px;
+  box-shadow: inset 0 -1px 3px rgba(0,0,0,0.6), inset 0 1px 0 rgba(217,168,71,0.08);
+  padding: 0.3rem 0.5rem;
+  transition: all 0.2s ease;
+}
+.res-cell:hover {
+  border-color: rgba(217,168,71,0.5);
+  box-shadow: inset 0 -1px 3px rgba(0,0,0,0.6), 0 0 8px rgba(217,168,71,0.2);
+}
+
+/* Decorative divider */
+.heraldic-divider {
+  position: relative;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--bronze), transparent);
+  margin: 0.5rem 0;
+}
+.heraldic-divider::before {
+  content: "❖";
+  position: absolute;
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  background: #110a04;
+  color: var(--gold);
+  padding: 0 0.5rem;
+  font-size: 0.7rem;
+}
+
+/* Hero portrait frame (decorative) */
+.hero-frame {
+  position: relative;
+}
+.hero-frame::before {
+  content: "";
+  position: absolute;
+  inset: -6px;
+  border-radius: 50%;
+  background: conic-gradient(from 0deg, var(--gold) 0%, var(--bronze) 25%, var(--gold-bright) 50%, var(--bronze) 75%, var(--gold) 100%);
+  animation: rotate-slow 20s linear infinite;
+  z-index: -1;
+  filter: blur(2px);
+}
+@keyframes rotate-slow {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* Stat badge */
+.stat-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.2rem 0.5rem;
+  background: linear-gradient(180deg, rgba(184,134,47,0.18), rgba(110,60,20,0.25));
+  border: 1px solid rgba(217,168,71,0.4);
+  border-radius: 3px;
+  font-family: var(--font-cinzel), serif;
+  font-size: 0.65rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--gold-pale);
+}
+
+/* Glow pulse for important elements */
+@keyframes pulse-glow {
+  0%, 100% { box-shadow: 0 0 8px rgba(217,168,71,0.4); }
+  50%      { box-shadow: 0 0 16px rgba(217,168,71,0.7); }
+}
+.pulse-gold {
+  animation: pulse-glow 2.5s ease-in-out infinite;
+}
+
+/* Banner ribbon */
+.ribbon {
+  position: relative;
+  display: inline-block;
+  padding: 0.25rem 1.5rem;
+  background: linear-gradient(180deg, #6e1e1e 0%, #4a0f0f 100%);
+  color: var(--parchment);
+  font-family: var(--font-cinzel), serif;
+  font-size: 0.65rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  border: 1px solid var(--gold);
+  box-shadow: 0 2px 6px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,200,200,0.15);
+  text-shadow: 0 1px 2px rgba(0,0,0,0.8);
+}
+.ribbon::before, .ribbon::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  width: 8px; height: 100%;
+  background: inherit;
+  border: inherit;
+}
+.ribbon::before {
+  left: -8px;
+  clip-path: polygon(100% 0, 100% 100%, 0 50%);
+  transform: translateY(-50%);
+}
+.ribbon::after {
+  right: -8px;
+  clip-path: polygon(0 0, 0 100%, 100% 50%);
+  transform: translateY(-50%);
+}
+
+/* Faction-tinted glows */
+.faction-portadores { box-shadow: 0 0 12px rgba(147,51,234,0.4); }
+.faction-imperio    { box-shadow: 0 0 12px rgba(217,168,71,0.4); }
+.faction-federacion { box-shadow: 0 0 12px rgba(34,211,238,0.4); }
+
+/* Map background gradient (subtle ambient) */
+.map-canvas {
+  background:
+    radial-gradient(ellipse at center, rgba(58,40,24,0.4) 0%, rgba(15,9,4,1) 100%);
+}
+
+/* Buttons — hover lift */
+.btn-medieval, .btn-blood {
+  transition: all 0.15s ease;
+}
+.btn-medieval:hover:not(:disabled), .btn-blood:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 10px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,220,150,0.3);
+}
+
+/* Background ambient particles using CSS */
+.ambient-mist {
+  position: absolute;
+  inset: 0;
+  background-image:
+    radial-gradient(2px 2px at 25% 30%, rgba(217,168,71,0.15), transparent 50%),
+    radial-gradient(1px 1px at 75% 60%, rgba(217,168,71,0.1), transparent 50%),
+    radial-gradient(2px 2px at 50% 80%, rgba(184,134,47,0.08), transparent 50%);
+  pointer-events: none;
 }
 
 /* Nav icon button (top bar) */
