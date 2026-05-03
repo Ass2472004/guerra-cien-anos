@@ -14,8 +14,8 @@ export async function POST(req: Request) {
     houseName?: string;
   };
 
-  if (!["ENGLAND", "FRANCE", "SPAIN"].includes(faction)) {
-    return NextResponse.json({ error: "Faccion invalida" }, { status: 400 });
+  if (!["PORTADORES", "IMPERIO", "FEDERACION"].includes(faction)) {
+    return NextResponse.json({ error: "Facción inválida" }, { status: 400 });
   }
 
   const game = await createNewGame(

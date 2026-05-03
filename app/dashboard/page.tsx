@@ -13,9 +13,9 @@ interface GameCard {
 }
 
 const FACTION_INFO: Record<string, { name: string; icon: string; color: string; bg: string }> = {
-  ENGLAND: { name: "Inglaterra", icon: "🦁", color: "text-red-300", bg: "border-red-800/60 bg-red-950/20" },
-  FRANCE:  { name: "Francia",    icon: "⚜",  color: "text-blue-300", bg: "border-blue-800/60 bg-blue-950/20" },
-  SPAIN:   { name: "Castilla",   icon: "🛡",  color: "text-yellow-300", bg: "border-yellow-800/60 bg-yellow-950/20" },
+  PORTADORES: { name: "Los Portadores",  icon: "🌑", color: "text-violet-300", bg: "border-violet-800/60 bg-violet-950/20" },
+  IMPERIO:    { name: "El Imperio",      icon: "👑", color: "text-amber-300",  bg: "border-amber-800/60 bg-amber-950/20"  },
+  FEDERACION: { name: "La Federación",   icon: "⚓", color: "text-teal-300",   bg: "border-teal-800/60 bg-teal-950/20"   },
 };
 
 const EVENT_ICONS: Record<string, string> = {
@@ -40,7 +40,7 @@ export default function DashboardPage() {
   if (!data) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="text-5xl animate-pulse">⚜</div>
+        <div className="text-5xl animate-pulse">🌑</div>
       </div>
     );
   }
@@ -53,9 +53,9 @@ export default function DashboardPage() {
       {/* Header */}
       <header className="banner px-6 py-4 flex items-center justify-between border-b-2 border-bronze">
         <div className="flex items-center gap-3">
-          <span className="text-3xl">⚜</span>
+          <span className="text-3xl">🌑</span>
           <div>
-            <h1 className="font-display title-gold text-2xl">Guerra de los Cien Años</h1>
+            <h1 className="font-display title-gold text-2xl">Mundo Nahkor</h1>
             <p className="text-parchment-aged text-xs italic">Salve, {data.userName}</p>
           </div>
         </div>
@@ -79,14 +79,14 @@ export default function DashboardPage() {
             <div className="parchment p-8 text-center space-y-3">
               <div className="text-5xl">🏰</div>
               <p className="font-display text-ink text-lg">Ninguna campaña activa</p>
-              <p className="text-ink-soft text-sm italic">Elige tu reino y comienza a forjar tu legado en Europa.</p>
+              <p className="text-ink-soft text-sm italic">Elige tu facción y comienza a forjar tu legado en Nahkor.</p>
               <Link href="/select-faction" className="btn-medieval inline-block mt-2">⚔ Comenzar campaña</Link>
             </div>
           )}
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {activeGames.map(game => {
-              const fi = FACTION_INFO[game.faction] ?? FACTION_INFO.ENGLAND;
+              const fi = FACTION_INFO[game.faction] ?? FACTION_INFO.PORTADORES;
               const nd = NOBILITY[game.nobilityTitle as NobilityTitle];
               const victoryPct = Math.min(100, (game.playerVillages / 15) * 100);
               return (
@@ -161,7 +161,7 @@ export default function DashboardPage() {
             <h2 className="font-display text-parchment-dark text-lg">📜 Crónicas pasadas</h2>
             <div className="space-y-2">
               {finishedGames.map(game => {
-                const fi = FACTION_INFO[game.faction] ?? FACTION_INFO.ENGLAND;
+                const fi = FACTION_INFO[game.faction] ?? FACTION_INFO.PORTADORES;
                 return (
                   <Link key={game.id} href={`/game/${game.id}/events`}
                     className="flex items-center gap-4 parchment-dark border border-bronze/30 p-3 rounded-sm hover:brightness-105 transition-all opacity-70 hover:opacity-100">
@@ -189,15 +189,15 @@ export default function DashboardPage() {
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-sm text-ink-soft">
             <div className="space-y-1">
               <p className="font-display text-ink text-sm">🏰 Conquista</p>
-              <p>Mueve tus ejércitos a aldeas enemigas o neutrales para conquistarlas. Necesitas 15 aldeas para ganar.</p>
+              <p>Mueve tus ejércitos a aldeas enemigas o neutrales para conquistarlas. Necesitas 15 aldeas para dominar el mundo Nahkor.</p>
             </div>
             <div className="space-y-1">
               <p className="font-display text-ink text-sm">💰 Diplomacia</p>
-              <p>Paga tributo en plata para convertir aldeas neutrales sin derramar sangre. Más barato que la guerra.</p>
+              <p>Paga tributo en plata para convertir aldeas neutrales sin derramar sangre. La plata mueve más que la espada Nahkor.</p>
             </div>
             <div className="space-y-1">
               <p className="font-display text-ink text-sm">⚔ Nobleza</p>
-              <p>Gana prestigio en batalla para ascender de Lord a Rey. Cada título añade bonificaciones de producción y combate.</p>
+              <p>Gana prestigio en batalla para ascender de Vasallo a Portador de las 256. Cada título añade bonificaciones de producción y combate.</p>
             </div>
           </div>
         </section>

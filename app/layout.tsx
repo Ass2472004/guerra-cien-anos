@@ -16,8 +16,8 @@ const cormorant = Cormorant_Garamond({
 });
 
 export const metadata: Metadata = {
-  title: "Guerra de los Cien Años",
-  description: "Juego de estrategia medieval — España, Francia e Inglaterra",
+  title: "Nahkor — Crónicas del Mundo Oscuro",
+  description: "Juego de estrategia en el Mundo Nahkor — Portadores, Imperio Matriarcal y la Federación de Rha'miras",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

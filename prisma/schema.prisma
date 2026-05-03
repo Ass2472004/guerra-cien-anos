@@ -61,13 +61,13 @@ model VerificationToken {
 
 // ─── GAME ────────────────────────────────────────────────────────────────────
 
-// Faction: ENGLAND | FRANCE | SPAIN
+// Faction: PORTADORES | IMPERIO | FEDERACION
 // Owner:   PLAYER | AI_RIVAL | AI_NEUTRAL
 
 model Game {
   id        String   @id @default(cuid())
   userId    String
-  faction   String   // ENGLAND | FRANCE | SPAIN
+  faction   String   // PORTADORES | IMPERIO | FEDERACION
   turn      Int      @default(0)
   tick      Int      @default(0)
   lastTick  DateTime @default(now())
@@ -150,7 +150,7 @@ model Village {
   tileId     String  @unique
   name       String
   owner      String  @default("AI_NEUTRAL") // PLAYER | AI_RIVAL | AI_NEUTRAL
-  faction    String? // ENGLAND | FRANCE | SPAIN
+  faction    String? // PORTADORES | IMPERIO | FEDERACION
   loyalty    Int     @default(100)
   population Int     @default(50)
   wallLevel  Int     @default(0)
@@ -220,7 +220,7 @@ model Army {
   gameId   String
   name     String  @default("Ejército")
   owner    String  // PLAYER | AI_RIVAL
-  faction  String  // ENGLAND | FRANCE | SPAIN
+  faction  String  // PORTADORES | IMPERIO | FEDERACION
 
   // Current position
   tileId   String?
@@ -255,12 +255,12 @@ model Army {
 }
 
 // TroopType (per faction):
-// ENGLAND: LEVY, WELSH_SPEARMAN, SERGEANT, CROSSBOWMAN, LONGBOWMAN,
-//          HOBELAR, MAN_AT_ARMS_ENG, KNIGHT_ENG, SCOUT_ENG, ENGINEER_ENG, TREBUCHET_ENG
-// FRANCE:  PIETAILLE, PIKEMAN, MOUNTED_SERGEANT, GENOESE_CROSSBOWMAN, FRANC_ARCHER,
-//          MAN_AT_ARMS_FRA, LIGHT_HORSEMAN_FRA, CHEVALIER, COURT_SPY, BOMBARD_BUREAU, SIEGE_ENGINEER_FRA
-// SPAIN:   PEON, ALMOGAVAR, BALLESTERO, PAVESERO, JINETE, MOUNTED_CROSSBOWMAN,
-//          MAN_AT_ARMS_SPA, KNIGHT_SANTIAGO, ALMOGAVAR_SPY, LOMBARD_SPA, CASTILIAN_SAILOR
+// PORTADORES: LANCERO_OSCURO, GUERRERO_SOMBRA, ARQUERO_NAHKOR, FLECHA_KOR, ESPÍA_OSCURO,
+//             JINETE_OSCURO, PORTADOR_NOVICIO, PORTADOR_MAESTRO, INFILTRADOR_SOMBRA, INGENIERO_OSCURO, CATAPULTA_KOR
+// IMPERIO:    SOLDADO_IMPERIAL, LANCERA_IMPERIAL, JINETE_IMPERIAL, ARQUERA_IMPERIAL, ESPÍA_IMPERIAL,
+//             GUARDIA_EMPERATRIZ, SOLDADO_ELITE, JINETE_DRAGON, EXPLORADORA_IMPERIAL, INGENIERO_IMPERIAL, GUIVERNO_ASEDIO
+// FEDERACION: MARINERO_COMBATE, GUARDIAN_PUERTO, BALLESTERO_MAR, MERCENARIO_MERXIAS, JINETE_MERCANTE,
+//             ESPADA_ALQUILER, SOLDADO_MERCADO, SENADOR_ARMADO, ESPÍA_COMERCIO, ARIETE_NAVAL, CANONERO_MIRAS
 
 // Role: OFF | DEF | SPY | SIEGE | SPECIAL
 model ArmyTroop {
@@ -344,7 +344,7 @@ model Hero {
   gameId  String @unique
   armyId  String? @unique
   name    String
-  faction String // ENGLAND | FRANCE | SPAIN
+  faction String // PORTADORES | IMPERIO | FEDERACION
 
   level   Int @default(1)
   xp      Int @default(0)

@@ -22,7 +22,7 @@ export async function processNeutralAI(gameId: string) {
 
     // If no garrison, create a small one
     if (!garrison) {
-      const neutralFaction: Faction = "ENGLAND"; // neutral garrison uses generic troops
+      const neutralFaction: Faction = "PORTADORES"; // neutral garrison uses Portadores troops
       const army = await prisma.army.create({
         data: {
           gameId, owner: "AI_RIVAL", faction: neutralFaction,
@@ -30,8 +30,8 @@ export async function processNeutralAI(gameId: string) {
           stamina: 100,
         },
       });
-      // Small garrison: 20 levy infantry
-      await prisma.armyTroop.create({ data: { armyId: army.id, type: "LEVY", faction: neutralFaction, count: 20 } });
+      // Small garrison: 20 lanceros oscuros
+      await prisma.armyTroop.create({ data: { armyId: army.id, type: "LANCERO_OSCURO", faction: neutralFaction, count: 20 } });
     }
   }
 }
@@ -99,7 +99,7 @@ async function aiQueueBuilding(gameId: string, village: Awaited<ReturnType<typeo
 
 async function aiQueueTroops(gameId: string, village: any) {
   if (village.trainQueues.length > 0) return;
-  const faction = (village.faction ?? "FRANCE") as Faction;
+  const faction = (village.faction ?? "IMPERIO") as Faction;
   const troops = TROOPS_BY_FACTION[faction];
 
   // AI trains 60% DEF, 40% OFF split

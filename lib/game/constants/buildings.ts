@@ -7,8 +7,8 @@ export type BuildMaterial = "ADOBE" | "WOOD_STONE" | "IRON_STONE";
 
 export interface BuildingLevel {
   cost: { wood: number; stone: number; iron: number; adobe: number; silver: number };
-  time: number; // seconds
-  bonus: Record<string, number>; // e.g. { warehouseCap: 500 }
+  time: number;
+  bonus: Record<string, number>;
 }
 
 export interface BuildingDef {
@@ -16,7 +16,6 @@ export interface BuildingDef {
   name: string;
   description: string;
   maxLevel: number;
-  // material tier: early = adobe, mid = wood+stone, late = iron+stone
   levels: BuildingLevel[];
 }
 
@@ -47,8 +46,8 @@ function ironStoneLvl(lvl: number, bonus: Record<string, number> = {}): Building
 
 export const BUILDINGS: Record<BuildingType, BuildingDef> = {
   MAIN_HALL: {
-    key: "MAIN_HALL", name: "Sala Principal", maxLevel: 20,
-    description: "El corazón de tu aldea. Sube su nivel para desbloquear el resto de construcciones.",
+    key: "MAIN_HALL", name: "Salón del Dominio", maxLevel: 20,
+    description: "El corazón de tu asentamiento en Nahkor. Sube su nivel para desbloquear el resto de construcciones.",
     levels: Array.from({ length: 20 }, (_, i) => {
       const l = i + 1;
       return {
@@ -59,8 +58,8 @@ export const BUILDINGS: Record<BuildingType, BuildingDef> = {
     }),
   },
   WAREHOUSE: {
-    key: "WAREHOUSE", name: "Almacén", maxLevel: 20,
-    description: "Aumenta la capacidad de madera, piedra, hierro y plata.",
+    key: "WAREHOUSE", name: "Depósito de Recursos", maxLevel: 20,
+    description: "Almacena los recursos extraídos de las tierras de Nahkor. Aumenta capacidad de madera, piedra y hierro.",
     levels: Array.from({ length: 20 }, (_, i) => {
       const l = i + 1;
       return {
@@ -71,8 +70,8 @@ export const BUILDINGS: Record<BuildingType, BuildingDef> = {
     }),
   },
   GRANARY: {
-    key: "GRANARY", name: "Granero", maxLevel: 20,
-    description: "Aumenta la capacidad de grano, paja y adobe.",
+    key: "GRANARY", name: "Silos de Grano", maxLevel: 20,
+    description: "Guarda el grano para los días de Nahkor. Indispensable durante las inundaciones cíclicas.",
     levels: Array.from({ length: 20 }, (_, i) => {
       const l = i + 1;
       return {
@@ -83,18 +82,18 @@ export const BUILDINGS: Record<BuildingType, BuildingDef> = {
     }),
   },
   MARKET: {
-    key: "MARKET", name: "Mercado", maxLevel: 10,
-    description: "Comercia con aldeas aliadas usando plata y oro.",
+    key: "MARKET", name: "Puerto Mercantil", maxLevel: 10,
+    description: "Comercia con otras aldeas. Inspirado en los puertos de la Federación de Rha'miras.",
     levels: Array.from({ length: 10 }, (_, i) => woodStoneLvl(i + 1, { tradeRoutes: i + 1 })),
   },
   FORGE: {
-    key: "FORGE", name: "Forja", maxLevel: 15,
-    description: "Mejora las estadísticas de tus tropas.",
+    key: "FORGE", name: "Fragua de Hierro", maxLevel: 15,
+    description: "Mejora el equipamiento de tus tropas. El hierro de Nahkor es especialmente resistente.",
     levels: Array.from({ length: 15 }, (_, i) => ironStoneLvl(i + 1, { troopUpgrade: i + 1 })),
   },
   BARRACKS: {
-    key: "BARRACKS", name: "Cuartel", maxLevel: 15,
-    description: "Entrena infantería. Cada nivel reduce el tiempo de entrenamiento.",
+    key: "BARRACKS", name: "Cuartel de Guerra", maxLevel: 15,
+    description: "Entrena guerreros. Cada nivel reduce el tiempo de entrenamiento y desbloquea tropas más poderosas.",
     levels: Array.from({ length: 15 }, (_, i) => {
       const l = i + 1;
       return {
@@ -105,18 +104,18 @@ export const BUILDINGS: Record<BuildingType, BuildingDef> = {
     }),
   },
   STABLES: {
-    key: "STABLES", name: "Cuadras", maxLevel: 15,
-    description: "Entrena caballería. Requiere BARRACKS nivel 3.",
+    key: "STABLES", name: "Establos y Nido", maxLevel: 15,
+    description: "Cría caballos y guivernos. Los jinetes de dragón del Imperio nacen aquí. Requiere Cuartel nivel 3.",
     levels: Array.from({ length: 15 }, (_, i) => woodStoneLvl(i + 1, { cavalryTrainBonus: (i + 1) * 5 })),
   },
   SIEGE_WORKSHOP: {
-    key: "SIEGE_WORKSHOP", name: "Taller de asedio", maxLevel: 10,
-    description: "Construye máquinas de guerra. Requiere MAIN_HALL nivel 10.",
+    key: "SIEGE_WORKSHOP", name: "Taller de Asedio", maxLevel: 10,
+    description: "Construye máquinas de guerra para derribar murallas enemigas. Requiere Salón nivel 10.",
     levels: Array.from({ length: 10 }, (_, i) => ironStoneLvl(i + 1)),
   },
   WATCHTOWER: {
-    key: "WATCHTOWER", name: "Torre de vigilancia", maxLevel: 20,
-    description: "Detecta espías enemigos. Amplía la visibilidad en el mapa.",
+    key: "WATCHTOWER", name: "Torre de Kor", maxLevel: 20,
+    description: "Capta la luz de Kor para detectar movimientos enemigos. Amplía la visibilidad en el mapa.",
     levels: Array.from({ length: 20 }, (_, i) => {
       const l = i + 1;
       return {
@@ -127,18 +126,18 @@ export const BUILDINGS: Record<BuildingType, BuildingDef> = {
     }),
   },
   TAVERN: {
-    key: "TAVERN", name: "Taberna", maxLevel: 5,
-    description: "Genera lealtad y sube moral de las tropas.",
+    key: "TAVERN", name: "La Posada del Portador", maxLevel: 5,
+    description: "Lugar de descanso entre los días de Nahkor. Mejora la moral y la lealtad de los aldeanos.",
     levels: Array.from({ length: 5 }, (_, i) => woodStoneLvl(i + 1, { moraleBonus: (i + 1) * 5 })),
   },
   CHAPEL: {
-    key: "CHAPEL", name: "Capilla", maxLevel: 5,
-    description: "Refuerzo espiritual. Bonus de defensa para tropas en aldea.",
+    key: "CHAPEL", name: "Templo del Octaedro", maxLevel: 5,
+    description: "Los creyentes del Octaedro rezan aquí. Los Catalizadores del Origen bendicen tus defensas.",
     levels: Array.from({ length: 5 }, (_, i) => woodStoneLvl(i + 1, { defenseBonus: (i + 1) * 5 })),
   },
   WALLS: {
     key: "WALLS", name: "Murallas", maxLevel: 20,
-    description: "Multiplica la defensa de todas las tropas en la aldea.",
+    description: "Protege tu aldea de los ataques. Construidas con la piedra de las montañas del mundo conocido.",
     levels: Array.from({ length: 20 }, (_, i) => {
       const l = i + 1;
       return {
@@ -149,13 +148,13 @@ export const BUILDINGS: Record<BuildingType, BuildingDef> = {
     }),
   },
   RALLY_POINT: {
-    key: "RALLY_POINT", name: "Punto de reunión", maxLevel: 1,
-    description: "Desde aquí envías y gestionas tus ejércitos.",
+    key: "RALLY_POINT", name: "Punto de Mando", maxLevel: 1,
+    description: "Desde aquí envías y gestionas tus ejércitos a través de las tierras de Nahkor.",
     levels: [adobeLvl(1)],
   },
   RESIDENCE: {
-    key: "RESIDENCE", name: "Residencia", maxLevel: 10,
-    description: "Aloja al héroe y permite fundar campamentos.",
+    key: "RESIDENCE", name: "Residencia del Portador", maxLevel: 10,
+    description: "Aloja al portador/héroe y permite fundar campamentos en las ruinas del mundo antiguo.",
     levels: Array.from({ length: 10 }, (_, i) => woodStoneLvl(i + 1, { heroSlots: 1 })),
   },
 };

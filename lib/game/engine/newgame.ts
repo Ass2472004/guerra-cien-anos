@@ -81,10 +81,14 @@ export async function createNewGame(
         ],
       });
 
-      // Starter garrison army
-      const armyFaction = v.faction ?? "ENGLAND";
-      const infType = isPlayer ? (faction === "ENGLAND" ? "LEVY" : faction === "FRANCE" ? "PIETAILLE" : "PEON") : "PIETAILLE";
-      const rangedType = isPlayer ? (faction === "ENGLAND" ? "LONGBOWMAN" : faction === "FRANCE" ? "FRANC_ARCHER" : "BALLESTERO_SPA") : "FRANC_ARCHER";
+      // Starter garrison army — tropas de inicio según facción
+      const armyFaction = v.faction ?? "PORTADORES";
+      const infType = isPlayer
+        ? (faction === "PORTADORES" ? "LANCERO_OSCURO"   : faction === "IMPERIO" ? "SOLDADO_IMPERIAL" : "MARINERO_COMBATE")
+        : (armyFaction === "PORTADORES" ? "LANCERO_OSCURO" : armyFaction === "IMPERIO" ? "SOLDADO_IMPERIAL" : "MARINERO_COMBATE");
+      const rangedType = isPlayer
+        ? (faction === "PORTADORES" ? "FLECHA_KOR"        : faction === "IMPERIO" ? "ARQUERA_IMPERIAL"  : "BALLESTERO_MAR")
+        : (armyFaction === "PORTADORES" ? "FLECHA_KOR"    : armyFaction === "IMPERIO" ? "ARQUERA_IMPERIAL" : "BALLESTERO_MAR");
       const garrison = await prisma.army.create({
         data: {
           gameId: game.id,

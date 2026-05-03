@@ -83,7 +83,7 @@ export default function VillagePage({ params }: { params: Promise<{ id: string; 
   );
 
   const { village, armies } = data;
-  const faction = (village.faction ?? "ENGLAND") as Faction;
+  const faction = (village.faction ?? "PORTADORES") as Faction;
   const hasMarket = village.buildings.some(b => b.type === "MARKET");
 
   const res = {

@@ -21,12 +21,36 @@ function rng(seed: number) {
   };
 }
 
+// Nombres de asentamientos del mundo Nahkor
 function villageName(faction: string | null, index: number): string {
-  const engNames = ["Oxbridge","Caldwell","Hartwick","Dunmore","Ashford","Blackmoor","Elmstead","Fairhaven","Grantham","Holtfield"];
-  const fraNames = ["Beaumont","Chartres","Valois","Orléans","Reims","Troyes","Rouen","Amiens","Blois","Chinon"];
-  const spaNames = ["Burgos","Toledo","Sevilla","Valladolid","Segovia","Ávila","Salamanca","Córdoba","Jaén","Cádiz"];
-  const neutral = ["Aldea","Poblado","Caserío","Alquería","Cortijo","Villar","Lugar","Arrabal","Burg","Hamlet"];
-  const names = faction === "ENGLAND" ? engNames : faction === "FRANCE" ? fraNames : faction === "SPAIN" ? spaNames : neutral;
+  // PORTADORES: nombres de oscuridad, ruinas y poder antiguo
+  const portadoresNames = [
+    "Sangre Nocturna", "Umbral Oscuro", "Kemet", "Anrob", "Ciudadela de las Sombras",
+    "Yehior", "Torre de Kor", "Paso de la Nahkor", "Ken'anne", "Ruinas de Urkart",
+  ];
+  // IMPERIO: nombres del Imperio Matriarcal y sus provincias
+  const imperioNames = [
+    "Unalfanen", "La Ciudadela", "Afthonia", "Aksum", "Rha'Kesh",
+    "Dominio de Kor", "Fortaleza Imperial", "Angkor", "Puerto Imperial", "Khotan",
+  ];
+  // FEDERACION: nombres de las ciudades marinas y puertos de Rha'miras
+  const federacionNames = [
+    "Rha'miras", "Na'vi", "Merxias", "Puerto del Mar Allende", "Islas de Miras",
+    "Bahía de Rha'en", "Factoría Merxiana", "Fitoia", "Puerto Libre", "Senado del Mar",
+  ];
+  // Neutrales: nombres genéricos del mundo conocido
+  const neutralNames = [
+    "Aldea del Río", "Poblado Antiguo", "Ruinas del Dominio", "Caserío de Kor",
+    "Paso Montañoso", "Villar de la Inundación", "Lugar Olvidado", "Arrabal de Nahkor",
+    "Caserío Norteño", "Arrabal del Sur",
+  ];
+
+  const names =
+    faction === "PORTADORES" ? portadoresNames :
+    faction === "IMPERIO"    ? imperioNames :
+    faction === "FEDERACION" ? federacionNames :
+    neutralNames;
+
   return names[index % names.length] + (index >= names.length ? ` ${Math.floor(index / names.length) + 1}` : "");
 }
 
@@ -47,35 +71,38 @@ export function generateMap(width: number, height: number, playerFaction: Factio
       else if (r < 0.20)  { type = "OASIS_IRON";   bonus = { iron: 25 }; }
       else if (r < 0.22)  { type = "DEPOSIT_SILVER"; bonus = { silver: 30 }; }
       else if (r < 0.23)  { type = "DEPOSIT_GOLD";   bonus = { gold: 20 }; }
-      else if (r < 0.26)  { type = "RUINS"; }
-      else if (r < 0.29)  { type = "RIVER"; }
-      else if (r < 0.32)  { type = "MOUNTAIN"; }
+      else if (r < 0.26)  { type = "RUINS"; }       // Ruinas del gran dominio
+      else if (r < 0.29)  { type = "RIVER"; }       // Ríos que se inundan en los ciclos
+      else if (r < 0.32)  { type = "MOUNTAIN"; }    // Montañas del mundo conocido
 
       tiles.push({ x, y, type, bonus, hasVillage: false, hasCamp: false });
     }
   }
 
-  // Place villages: player start (center-left), AI rival (center-right), neutrals scattered
   const villages: Array<{
     x: number; y: number; name: string;
     owner: "PLAYER" | "AI_RIVAL" | "AI_NEUTRAL";
     faction: Faction | null;
   }> = [];
 
-  // Player village
+  // Aldea del jugador (cuadrante izquierdo)
   const px = Math.floor(width * 0.2);
   const py = Math.floor(height / 2);
   setTileVillage(tiles, width, px, py);
   villages.push({ x: px, y: py, name: villageName(playerFaction, 0), owner: "PLAYER", faction: playerFaction });
 
-  // AI rival village (opposite quadrant)
-  const rivalFaction = playerFaction === "ENGLAND" ? "FRANCE" : playerFaction === "FRANCE" ? "ENGLAND" : "FRANCE";
+  // Aldea del rival IA (cuadrante derecho, facción distinta)
+  const rivalFaction: Faction =
+    playerFaction === "PORTADORES" ? "IMPERIO" :
+    playerFaction === "IMPERIO"    ? "FEDERACION" :
+    "PORTADORES";
+
   const rx = Math.floor(width * 0.8);
   const ry = Math.floor(height / 2);
   setTileVillage(tiles, width, rx, ry);
-  villages.push({ x: rx, y: ry, name: villageName(rivalFaction, 0), owner: "AI_RIVAL", faction: rivalFaction as Faction });
+  villages.push({ x: rx, y: ry, name: villageName(rivalFaction, 0), owner: "AI_RIVAL", faction: rivalFaction });
 
-  // Neutral villages (scattered)
+  // Aldeas neutrales dispersas
   const neutralCount = Math.floor(width * height * 0.05);
   let neutralIdx = 0;
   for (let i = 0; i < neutralCount; i++) {
@@ -101,7 +128,6 @@ function setTileVillage(tiles: MapTile[], width: number, x: number, y: number) {
   if (tile) { tile.type = "VILLAGE"; tile.hasVillage = true; tile.bonus = {}; }
 }
 
-// Returns tiles visible from a position given a vision radius
 export function getVisibleTiles(
   cx: number, cy: number, radius: number,
   width: number, height: number

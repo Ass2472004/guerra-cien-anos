@@ -111,7 +111,7 @@ export async function processTick(gameId: string) {
     if (!army) {
       army = await prisma.army.create({
         data: {
-          gameId, owner, faction: village.faction ?? "ENGLAND",
+          gameId, owner, faction: village.faction ?? "PORTADORES",
           tileId: village.tile.id,
           name: owner === "AI_RIVAL" ? "Hueste rival" : "Ejército",
         },

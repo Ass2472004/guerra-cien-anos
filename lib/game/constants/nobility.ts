@@ -1,3 +1,6 @@
+// Títulos de nobleza del Mundo Nahkor
+// El sistema se basa en el control de aldeas y el prestigio acumulado
+
 export type NobilityTitle = "LORD" | "BARON" | "COUNT" | "DUKE" | "KING";
 
 export interface NobilityDef {
@@ -7,18 +10,18 @@ export interface NobilityDef {
   icon: string;
   minVillages: number;
   minPrestige: number;
-  productionBonus: number;  // % added to all resource production
-  attackBonus: number;      // % added to army attack
-  defenseBonus: number;     // % added to army defense
-  recruitBonus: number;     // % reduction in training time
+  productionBonus: number;
+  attackBonus: number;
+  defenseBonus: number;
+  recruitBonus: number;
   description: string;
 }
 
 export const NOBILITY: Record<NobilityTitle, NobilityDef> = {
   LORD: {
     key: "LORD",
-    label: "Lord",
-    labelEs: "Señor",
+    label: "Vasallo",
+    labelEs: "Vasallo",
     icon: "🏡",
     minVillages: 0,
     minPrestige: 0,
@@ -26,12 +29,12 @@ export const NOBILITY: Record<NobilityTitle, NobilityDef> = {
     attackBonus: 0,
     defenseBonus: 0,
     recruitBonus: 0,
-    description: "Un noble menor que ha tomado las riendas de sus primeras tierras.",
+    description: "Un señor menor que ha tomado las riendas de sus primeras tierras en el mundo de Nahkor.",
   },
   BARON: {
     key: "BARON",
-    label: "Baron",
-    labelEs: "Barón",
+    label: "Señor Nahkor",
+    labelEs: "Señor Nahkor",
     icon: "🏰",
     minVillages: 2,
     minPrestige: 200,
@@ -39,12 +42,12 @@ export const NOBILITY: Record<NobilityTitle, NobilityDef> = {
     attackBonus: 0,
     defenseBonus: 5,
     recruitBonus: 5,
-    description: "Señor de varias aldeas. Su fama crece y sus hombres le siguen con fervor.",
+    description: "Dueño de varias aldeas. Su nombre comienza a resonar entre los portadores de espadas.",
   },
   COUNT: {
     key: "COUNT",
-    label: "Count",
-    labelEs: "Conde",
+    label: "Maestro Oscuro",
+    labelEs: "Maestro Oscuro",
     icon: "⚜",
     minVillages: 4,
     minPrestige: 600,
@@ -52,12 +55,12 @@ export const NOBILITY: Record<NobilityTitle, NobilityDef> = {
     attackBonus: 5,
     defenseBonus: 10,
     recruitBonus: 10,
-    description: "Gobernante de un condado entero. Su nombre resuena en las cortes de Europa.",
+    description: "Gobernante de un dominio entero. Las espadas Nahkor le reconocen como maestro.",
   },
   DUKE: {
     key: "DUKE",
-    label: "Duke",
-    labelEs: "Duque",
+    label: "Gran Portador",
+    labelEs: "Gran Portador",
     icon: "👑",
     minVillages: 7,
     minPrestige: 1500,
@@ -65,12 +68,12 @@ export const NOBILITY: Record<NobilityTitle, NobilityDef> = {
     attackBonus: 10,
     defenseBonus: 15,
     recruitBonus: 15,
-    description: "Un gran duque que controla vastas provincias. La corona le debe lealtad.",
+    description: "Un gran portador que controla vastas regiones. El Imperio le debe pleitesía.",
   },
   KING: {
     key: "KING",
-    label: "King",
-    labelEs: "Rey",
+    label: "Portador de las 256",
+    labelEs: "Portador de las 256",
     icon: "⚔👑",
     minVillages: 10,
     minPrestige: 3000,
@@ -78,13 +81,12 @@ export const NOBILITY: Record<NobilityTitle, NobilityDef> = {
     attackBonus: 20,
     defenseBonus: 20,
     recruitBonus: 20,
-    description: "Rey ungido de la guerra. Europa se arrodilla ante tu estandarte.",
+    description: "El más alto título. Heredero de las 256 espadas de la oscuridad. El mundo de Nahkor se arrodilla.",
   },
 };
 
 export const NOBILITY_ORDER: NobilityTitle[] = ["LORD", "BARON", "COUNT", "DUKE", "KING"];
 
-/** Determine the title a player earns given their village count and prestige */
 export function computeTitle(villages: number, prestige: number): NobilityTitle {
   let result: NobilityTitle = "LORD";
   for (const key of NOBILITY_ORDER) {
@@ -96,7 +98,6 @@ export function computeTitle(villages: number, prestige: number): NobilityTitle 
   return result;
 }
 
-/** Prestige gained per event */
 export const PRESTIGE_VILLAGE_CAPTURED = 150;
 export const PRESTIGE_BATTLE_WON       = 80;
 export const PRESTIGE_BATTLE_DEFENDED  = 50;

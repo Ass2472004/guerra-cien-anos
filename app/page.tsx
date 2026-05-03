@@ -9,23 +9,25 @@ export default function Home() {
       />
       <div className="absolute inset-0 bg-gradient-to-b from-stone-950/60 via-stone-950/40 to-stone-950 pointer-events-none" />
       <div className="relative max-w-2xl text-center space-y-7">
-        <div className="text-6xl">⚜</div>
+        <div className="text-6xl">🌑</div>
         <h1 className="font-display text-5xl md:text-6xl title-gold leading-tight">
-          Guerra de los Cien Años
+          Mundo Nahkor
         </h1>
+        <p className="font-display text-sm text-violet-300 tracking-widest uppercase">Crónicas del Mundo Oscuro</p>
         <div className="border-t border-b border-bronze py-4 mx-auto max-w-md">
           <p className="text-parchment-aged text-lg italic">
-            «Que tu acero sea fiel,<br />
-            tu fe inquebrantable,<br />
-            y tu corona, eterna.»
+            «Las espadas Nahkor son fragmentos de divinidad.<br />
+            Solo los puros de corazón<br />
+            sobreviven a la Gran Inundación.»
           </p>
+          <p className="text-ink-soft text-xs mt-2">— Teontélos, pasaje 4º</p>
         </div>
         <p className="text-parchment-dark text-lg">
-          Elige tu reino entre Inglaterra, Francia y España.<br />
-          Forja tu ejército. Conquista Europa.
+          Elige tu facción: Portadores, Imperio o Federación.<br />
+          Forja tu ejército. Conquista el mundo Nahkor.
         </p>
         <div className="flex gap-4 justify-center mt-8 flex-wrap">
-          <Link href="/login" className="btn-medieval">⚔ Entrar al campamento</Link>
+          <Link href="/login" className="btn-medieval">🌑 Entrar al mundo</Link>
           <Link href="/register" className="btn-blood">📜 Forjar nueva crónica</Link>
         </div>
       </div>

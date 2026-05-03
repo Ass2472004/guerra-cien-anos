@@ -84,6 +84,7 @@ const EVENT_ICONS: Record<string, string> = {
   GOOD_HARVEST: "🌾", DROUGHT: "☀", PLAGUE: "☠", TOURNAMENT: "⚔", DISCOVERY: "💎",
   BANDITS: "🗡", FIRE: "🔥", REINFORCEMENTS: "🛡", REBELLION: "⚡", HOLY_RELIC: "✝",
   MERCENARY: "⚔", FLOOD: "🌊", TREACHERY: "🕵", SIEGE_WEAPON_FOUND: "⚙", VICTORY: "👑",
+  NAHKOR_DIAS: "🌑", CATALIZADOR: "⚗", GUIVERNO_AVISTADO: "🐉",
 };
 
 function timeLeftStr(endsAt: string | null) {
@@ -316,8 +317,8 @@ export default function GamePage({ params }: { params: Promise<{ id: string }> }
       {/* ── HEADER ─────────────────────────────────────────────── */}
       <header className="banner px-3 py-2 flex items-center justify-between gap-2 border-b-2 border-bronze flex-shrink-0">
         <div className="flex items-center gap-2">
-          <span className="text-xl">⚜</span>
-          <h1 className="font-display title-gold text-base md:text-lg hidden sm:block">Guerra de los Cien Años</h1>
+          <span className="text-xl">🌑</span>
+          <h1 className="font-display title-gold text-base md:text-lg hidden sm:block">Mundo Nahkor</h1>
           {nd && (
             <span className="font-display text-gold-bright border border-gold/60 px-2 py-0.5 rounded-sm text-xs">
               {nd.icon} {nd.labelEs}

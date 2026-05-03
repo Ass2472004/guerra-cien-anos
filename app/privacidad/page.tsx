@@ -7,7 +7,7 @@ export default function PrivacidadPage() {
         <div className="text-center space-y-2">
           <div className="text-3xl">📜</div>
           <h1 className="font-display text-3xl text-ink">Política de privacidad</h1>
-          <p className="text-ink-soft text-sm italic">Guerra de los Cien Años</p>
+          <p className="text-ink-soft text-sm italic">Mundo Nahkor — Crónicas del Mundo Oscuro</p>
         </div>
 
         <div className="border-t border-bronze pt-4 space-y-5 text-sm text-ink leading-relaxed">
