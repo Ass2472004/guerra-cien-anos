@@ -102,6 +102,7 @@ type ZoomIdx = 0 | 1 | 2 | 3;
 export default function GamePage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   const [mapData, setMapData] = useState<MapData | null>(null);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [selected, setSelected] = useState<Tile | null>(null);
   const [selectedArmyId, setSelectedArmyId] = useState<string | null>(null);
   const [moveMode, setMoveMode] = useState(false);
@@ -122,8 +123,18 @@ export default function GamePage({ params }: { params: Promise<{ id: string }> }
   }, []);
 
   const loadMap = useCallback(async () => {
-    const res = await fetch(`/api/game/${id}/map`);
-    if (res.ok) setMapData(await res.json());
+    try {
+      const res = await fetch(`/api/game/${id}/map`);
+      if (res.ok) {
+        setMapData(await res.json());
+        setLoadError(null);
+      } else {
+        const d = await res.json().catch(() => ({}));
+        setLoadError(`${res.status}: ${d.error ?? "Error al cargar el mapa"}`);
+      }
+    } catch (e: any) {
+      setLoadError(`Red: ${e.message ?? "error de red"}`);
+    }
   }, [id]);
 
   useEffect(() => { loadMap(); }, [loadMap]);
@@ -222,9 +233,23 @@ export default function GamePage({ params }: { params: Promise<{ id: string }> }
 
   if (!mapData) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center gap-4">
-        <div className="text-5xl animate-pulse">🌑</div>
-        <p className="title-gold font-display text-2xl">Cargando el mundo Nahkor…</p>
+      <div className="min-h-screen flex flex-col items-center justify-center gap-4 p-6">
+        {loadError ? (
+          <>
+            <div className="text-5xl">⚠</div>
+            <p className="title-gold font-display text-2xl">No se puede cargar el mapa</p>
+            <p className="text-blood-bright text-sm font-mono bg-stone-900/60 px-3 py-2 rounded border border-bronze/40 max-w-lg text-center">{loadError}</p>
+            <div className="flex gap-3">
+              <button onClick={loadMap} className="btn-medieval text-sm">↻ Reintentar</button>
+              <Link href="/dashboard" className="btn-blood text-sm">🏠 Volver al inicio</Link>
+            </div>
+          </>
+        ) : (
+          <>
+            <div className="text-5xl animate-pulse">🌑</div>
+            <p className="title-gold font-display text-2xl">Cargando el mundo Nahkor…</p>
+          </>
+        )}
       </div>
     );
   }

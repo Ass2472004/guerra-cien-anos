@@ -47,14 +47,25 @@ const STAT_LABELS: Record<string, { icon: string; label: string; color: string }
 export default function HeroPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   const [data, setData] = useState<{ hero: HeroData; def: HeroDef; items: any; adventureTypes: Record<string, AdventureDef> } | null>(null);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [allocation, setAllocation] = useState({ fightingStrength: 0, attackBonus: 0, defenseBonus: 0, resourceBonus: 0 });
   const [msg, setMsg] = useState<{ text: string; ok: boolean } | null>(null);
   const [selectedAdventure, setSelectedAdventure] = useState<string>("RUINS");
   const [, setClock] = useState(Date.now());
 
   async function load() {
-    const res = await fetch(`/api/game/${id}/hero`);
-    if (res.ok) setData(await res.json());
+    try {
+      const res = await fetch(`/api/game/${id}/hero`);
+      if (res.ok) {
+        setData(await res.json());
+        setLoadError(null);
+      } else {
+        const d = await res.json().catch(() => ({}));
+        setLoadError(`${res.status}: ${d.error ?? "Error al cargar el héroe"}`);
+      }
+    } catch (e: any) {
+      setLoadError(`Red: ${e.message ?? "error de red"}`);
+    }
   }
   useEffect(() => { load(); const t = setInterval(load, 8000); return () => clearInterval(t); }, []);
   useEffect(() => { const t = setInterval(() => setClock(Date.now()), 1000); return () => clearInterval(t); }, []);
@@ -82,8 +93,20 @@ export default function HeroPage({ params }: { params: Promise<{ id: string }> }
   }
 
   if (!data) return (
-    <div className="min-h-screen flex items-center justify-center title-gold font-display text-2xl">
-      Convocando al héroe…
+    <div className="min-h-screen flex flex-col items-center justify-center gap-4 p-6">
+      {loadError ? (
+        <>
+          <div className="text-5xl">⚠</div>
+          <p className="title-gold font-display text-2xl">No se puede convocar al héroe</p>
+          <p className="text-blood-bright text-sm font-mono bg-stone-900/60 px-3 py-2 rounded border border-bronze/40 max-w-lg text-center">{loadError}</p>
+          <div className="flex gap-3">
+            <button onClick={load} className="btn-medieval text-sm">↻ Reintentar</button>
+            <Link href={`/game/${id}`} className="btn-blood text-sm">← Volver al mapa</Link>
+          </div>
+        </>
+      ) : (
+        <p className="title-gold font-display text-2xl">Convocando al héroe…</p>
+      )}
     </div>
   );
 

@@ -44,6 +44,7 @@ const TRADE_AMOUNTS = [50, 100, 250, 500];
 export default function VillagePage({ params }: { params: Promise<{ id: string; vid: string }> }) {
   const { id, vid } = use(params);
   const [data, setData] = useState<{ village: VillageData; armies: ArmyData[] } | null>(null);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [tab, setTab] = useState<Tab>("RESOURCES");
   const [msg, setMsg] = useState<{ text: string; ok: boolean } | null>(null);
   // clock drives real-time countdown re-renders
@@ -52,11 +53,21 @@ export default function VillagePage({ params }: { params: Promise<{ id: string; 
   const [newName, setNewName] = useState("");
 
   async function load() {
-    const res = await fetch(`/api/game/${id}/village/${vid}`);
-    if (res.ok) setData(await res.json());
+    try {
+      const res = await fetch(`/api/game/${id}/village/${vid}`);
+      if (res.ok) {
+        setData(await res.json());
+        setLoadError(null);
+      } else {
+        const d = await res.json().catch(() => ({}));
+        setLoadError(`${res.status}: ${d.error ?? "Error al cargar la aldea"}`);
+      }
+    } catch (e: any) {
+      setLoadError(`Red: ${e.message ?? "error de red"}`);
+    }
   }
 
-  useEffect(() => { load(); const t = setInterval(load, 8000); return () => clearInterval(t); }, []);
+  useEffect(() => { load(); const t = setInterval(load, 8000); return () => clearInterval(t); }, [id, vid]); // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => { const t = setInterval(() => setClock(Date.now()), 1000); return () => clearInterval(t); }, []);
 
   async function doAction(action: string, payload: object) {
@@ -77,9 +88,24 @@ export default function VillagePage({ params }: { params: Promise<{ id: string; 
   }
 
   if (!data) return (
-    <div className="min-h-screen flex flex-col items-center justify-center gap-3">
-      <div className="text-5xl animate-pulse">🏰</div>
-      <p className="title-gold font-display text-2xl">Cargando aldea…</p>
+    <div className="min-h-screen flex flex-col items-center justify-center gap-4 p-6">
+      {loadError ? (
+        <>
+          <div className="text-5xl">⚠</div>
+          <p className="title-gold font-display text-2xl">No se puede cargar la aldea</p>
+          <p className="text-blood-bright text-sm font-mono bg-stone-900/60 px-3 py-2 rounded border border-bronze/40 max-w-lg text-center">{loadError}</p>
+          <div className="flex gap-3">
+            <button onClick={load} className="btn-medieval text-sm">↻ Reintentar</button>
+            <Link href={`/game/${id}`} className="btn-blood text-sm">← Volver al mapa</Link>
+            <Link href="/dashboard" className="btn-medieval text-sm">🏠 Inicio</Link>
+          </div>
+        </>
+      ) : (
+        <>
+          <div className="text-5xl animate-pulse">🏰</div>
+          <p className="title-gold font-display text-2xl">Cargando aldea…</p>
+        </>
+      )}
     </div>
   );
 
