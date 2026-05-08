@@ -514,3 +514,655 @@ input:focus, select:focus, textarea:focus {
   border-radius: 0;
   border: 1px solid var(--wood-dark);
 }
+
+/* ═══════════════════════════════════════════════════════════════
+   NH-* DESIGN SYSTEM — from Claude Design handoff
+   Warmer, lifted palette with faction-aware CSS tokens
+   ═══════════════════════════════════════════════════════════════ */
+
+:root {
+  /* Backgrounds — warm brown, lifted ~2 stops for clarity */
+  --nh-bg:        #2a1d10;
+  --nh-bg-1:      #34261a;
+  --nh-bg-2:      #3d2e1f;
+  --nh-bg-3:      #4d3a26;
+  --nh-bg-4:      #5e4730;
+
+  /* Bronze / gold — warmer, brighter */
+  --nh-bronze:        #c08348;
+  --nh-bronze-dim:    #8f5f30;
+  --nh-bronze-bright: #d8965a;
+  --nh-gold:          #f0c060;
+  --nh-gold-bright:   #ffdb88;
+  --nh-parchment:     #fdf2d4;
+  --nh-parchment-dim: #e6d4a4;
+
+  /* Faction accent — default Imperio (amber) */
+  --nh-accent:        #d9a847;
+  --nh-accent-bright: #f0c862;
+  --nh-accent-soft:   rgba(217,168,71,0.20);
+  --nh-accent-glow:   rgba(217,168,71,0.55);
+
+  /* Resource colors — vivid */
+  --nh-r-wood:    #88d97a;
+  --nh-r-stone:   #d4cdb8;
+  --nh-r-iron:    #ff9060;
+  --nh-r-grain:   #ffe066;
+  --nh-r-straw:   #e8b048;
+  --nh-r-adobe:   #d06a44;
+  --nh-r-silver:  #88d4f0;
+  --nh-r-gold:    #ffcc55;
+
+  --nh-radius:    4px;
+  --nh-radius-lg: 6px;
+}
+
+/* Faction accent overrides via data attribute */
+[data-faction="portadores"],
+[data-faction="PORTADORES"] {
+  --nh-accent:        #9333ea;
+  --nh-accent-bright: #b770ff;
+  --nh-accent-soft:   rgba(147,51,234,0.22);
+  --nh-accent-glow:   rgba(147,51,234,0.55);
+}
+[data-faction="imperio"],
+[data-faction="IMPERIO"] {
+  --nh-accent:        #d9a847;
+  --nh-accent-bright: #f0c862;
+  --nh-accent-soft:   rgba(217,168,71,0.22);
+  --nh-accent-glow:   rgba(217,168,71,0.55);
+}
+[data-faction="federacion"],
+[data-faction="FEDERACION"] {
+  --nh-accent:        #22d3ee;
+  --nh-accent-bright: #6df0ff;
+  --nh-accent-soft:   rgba(34,211,238,0.22);
+  --nh-accent-glow:   rgba(34,211,238,0.55);
+}
+
+/* ── Root frame ──────────────────────────────────────────────── */
+.nh-frame {
+  background:
+    radial-gradient(ellipse at 50% 0%, rgba(240,192,96,0.10), transparent 55%),
+    radial-gradient(ellipse at 50% 100%, rgba(0,0,0,0.35), transparent 60%),
+    linear-gradient(180deg, var(--nh-bg) 0%, var(--nh-bg-1) 100%);
+  color: var(--nh-parchment);
+  font-family: 'Cormorant Garamond', Georgia, serif;
+  overflow: hidden;
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+
+/* ── Navbar ──────────────────────────────────────────────────── */
+.nh-navbar {
+  height: 52px;
+  background: linear-gradient(180deg, #5e4730 0%, #34261a 100%);
+  border-bottom: 1px solid var(--nh-bronze);
+  box-shadow: 0 1px 0 rgba(217,168,71,0.15) inset, 0 2px 8px rgba(0,0,0,0.6);
+  display: flex;
+  align-items: center;
+  padding: 0 14px;
+  gap: 14px;
+  position: relative;
+  z-index: 10;
+  flex-shrink: 0;
+}
+.nh-navbar::after {
+  content: '';
+  position: absolute; left: 0; right: 0; bottom: -1px; height: 1px;
+  background: linear-gradient(90deg, transparent, var(--nh-gold) 20%, var(--nh-gold) 80%, transparent);
+  opacity: 0.45;
+}
+
+/* Faction portrait ring */
+.nh-portrait {
+  width: 40px; height: 40px;
+  position: relative;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.nh-portrait::before {
+  content: '';
+  position: absolute; inset: -3px;
+  border-radius: 50%;
+  background: conic-gradient(
+    from 0deg,
+    var(--nh-accent) 0deg,
+    var(--nh-accent-bright) 90deg,
+    transparent 180deg,
+    var(--nh-accent) 270deg,
+    var(--nh-accent-bright) 360deg
+  );
+  animation: nh-rotate 12s linear infinite;
+}
+.nh-portrait-inner {
+  position: absolute; inset: 2px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 30% 30%, var(--nh-bg-3), var(--nh-bg));
+  display: flex; align-items: center; justify-content: center;
+  color: var(--nh-accent-bright);
+  font-family: 'Cinzel', serif;
+  font-size: 16px; font-weight: 700;
+  z-index: 1;
+  overflow: hidden;
+}
+.nh-portrait-level {
+  position: absolute; bottom: -3px; right: -3px;
+  width: 16px; height: 16px;
+  background: radial-gradient(circle, var(--nh-gold-bright), var(--nh-bronze) 70%);
+  border-radius: 50%;
+  border: 1px solid var(--nh-bg);
+  font-family: 'Cinzel', serif;
+  font-size: 9px; font-weight: 700;
+  color: var(--nh-bg);
+  display: flex; align-items: center; justify-content: center;
+  z-index: 2;
+}
+@keyframes nh-rotate { to { transform: rotate(360deg); } }
+
+/* Nav links */
+.nh-navlink {
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  padding: 4px 10px;
+  border-radius: var(--nh-radius);
+  cursor: pointer;
+  transition: background .15s, box-shadow .15s, transform .1s;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--nh-parchment-dim);
+  font-family: 'Cinzel', serif;
+  font-size: 9px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  line-height: 1;
+  gap: 3px;
+  min-width: 56px;
+  text-decoration: none;
+}
+.nh-navlink-glyph { font-size: 16px; line-height: 1; }
+.nh-navlink:hover, .nh-navlink:focus {
+  background: linear-gradient(180deg, rgba(217,168,71,0.10), rgba(217,168,71,0.02));
+  color: var(--nh-gold-bright);
+  box-shadow: 0 0 12px var(--nh-accent-glow), inset 0 0 0 1px rgba(217,168,71,0.2);
+}
+.nh-navlink.is-active {
+  color: var(--nh-gold-bright);
+  background: linear-gradient(180deg, rgba(217,168,71,0.18), rgba(217,168,71,0.05));
+  box-shadow: inset 0 -2px 0 var(--nh-gold);
+}
+.nh-nav-sep {
+  width: 1px; height: 28px;
+  background: linear-gradient(180deg, transparent, var(--nh-bronze), transparent);
+  margin: 0 2px;
+  flex-shrink: 0;
+}
+.nh-counter {
+  display: inline-flex; align-items: center; gap: 5px;
+  font-family: 'Cinzel', serif;
+  font-size: 11px; letter-spacing: 0.08em;
+  color: var(--nh-parchment);
+  padding: 4px 10px;
+  border: 1px solid var(--nh-bronze-dim);
+  background: linear-gradient(180deg, rgba(0,0,0,0.4), rgba(0,0,0,0.2));
+  border-radius: var(--nh-radius);
+}
+.nh-seal {
+  width: 38px; height: 38px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #f0c862, #b07432 60%, #6b4220 100%);
+  border: 2px solid #2a1a0c;
+  box-shadow: 0 0 0 1px var(--nh-gold), 0 0 14px var(--nh-accent-glow), inset 0 -2px 4px rgba(0,0,0,0.5);
+  color: #2a1a0c;
+  font-size: 14px; font-weight: 800;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer;
+  transition: transform .12s, box-shadow .15s;
+  flex-shrink: 0;
+  font-family: inherit;
+}
+.nh-seal:hover {
+  transform: scale(1.05) rotate(-6deg);
+  box-shadow: 0 0 0 1px var(--nh-gold-bright), 0 0 22px var(--nh-accent-glow), inset 0 -2px 4px rgba(0,0,0,0.5);
+}
+
+/* ── Resource bar ─────────────────────────────────────────────── */
+.nh-resbar {
+  display: flex; align-items: stretch;
+  padding: 0 14px;
+  background: linear-gradient(180deg, var(--nh-bg-3), var(--nh-bg-2));
+  border-bottom: 1px solid rgba(139,90,43,0.4);
+  position: relative; z-index: 9;
+  flex-shrink: 0;
+}
+.nh-resbar::after {
+  content: ''; position: absolute; left: 0; right: 0; bottom: 0; height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(217,168,71,0.5), transparent);
+}
+.nh-rescap {
+  flex: 1 1 0;
+  display: flex; align-items: center; gap: 7px;
+  padding: 5px 8px;
+  border-right: 1px solid rgba(139,90,43,0.18);
+  position: relative; min-width: 0;
+}
+.nh-rescap:last-child { border-right: none; }
+.nh-rescap.is-secondary { opacity: 0.6; }
+.nh-rescap.is-derived { opacity: 0.5; }
+.nh-rescap-icon {
+  width: 24px; height: 24px;
+  border-radius: 50%;
+  background: radial-gradient(circle, var(--c, #888) 0%, transparent 70%);
+  position: relative; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+}
+.nh-rescap-icon::after {
+  content: '';
+  position: absolute; inset: 4px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, color-mix(in oklab, var(--c, #888), white 35%), var(--c, #888) 60%, color-mix(in oklab, var(--c, #888), black 50%));
+  box-shadow: 0 0 8px var(--c, #888), inset 0 1px 0 rgba(255,255,255,0.3);
+}
+.nh-rescap-glyph {
+  position: absolute; inset: 0;
+  display: flex; align-items: center; justify-content: center;
+  z-index: 1; color: rgba(0,0,0,0.65); font-size: 10px; font-weight: 800;
+}
+.nh-rescap-body {
+  display: flex; flex-direction: column;
+  min-width: 0; flex: 1 1 auto; line-height: 1.05;
+}
+.nh-rescap-value {
+  font-family: 'Cinzel', serif;
+  font-size: 13px; font-weight: 700;
+  color: var(--c, var(--nh-parchment));
+  text-shadow: 0 0 8px color-mix(in oklab, var(--c, #888), transparent 60%);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.nh-rescap-rate {
+  font-family: monospace;
+  font-size: 9px;
+  color: var(--nh-parchment-dim);
+  opacity: 0.75;
+}
+.nh-rescap-label {
+  font-family: 'Cinzel', serif;
+  font-size: 7px; letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--nh-parchment-dim); opacity: 0.85;
+}
+.nh-rescap-bar {
+  position: absolute; left: 6px; right: 6px; bottom: 2px;
+  height: 2px;
+  background: rgba(0,0,0,0.5);
+  border-radius: 1px; overflow: hidden;
+}
+.nh-rescap-bar > i {
+  display: block; height: 100%;
+  background: linear-gradient(90deg, var(--c, #888), color-mix(in oklab, var(--c, #888), white 30%));
+  transition: width 1s linear;
+}
+
+/* ── Victory bar ─────────────────────────────────────────────── */
+.nh-victorybar {
+  height: 4px;
+  background: linear-gradient(90deg, rgba(0,0,0,0.5), rgba(0,0,0,0.3));
+  position: relative;
+  border-bottom: 1px solid rgba(139,90,43,0.3);
+  flex-shrink: 0;
+}
+.nh-victorybar > i {
+  display: block; height: 100%;
+  background: linear-gradient(90deg, var(--nh-gold), var(--nh-gold-bright), var(--nh-gold));
+  box-shadow: 0 0 8px var(--nh-accent-glow);
+  transition: width .6s ease;
+}
+
+/* ── Panels ──────────────────────────────────────────────────── */
+.nh-panel {
+  background:
+    linear-gradient(180deg, rgba(77,58,38,0.75), rgba(42,29,16,0.85));
+  border: 1px solid var(--nh-bronze-dim);
+  border-radius: var(--nh-radius);
+  position: relative;
+  box-shadow: inset 0 1px 0 rgba(217,168,71,0.10), 0 4px 12px rgba(0,0,0,0.5);
+}
+.nh-panel-header {
+  padding: 7px 12px 6px;
+  background: linear-gradient(180deg, rgba(94,71,48,0.85), rgba(61,46,31,0.6));
+  border-bottom: 1px solid rgba(139,90,43,0.5);
+  font-family: 'Cinzel', serif;
+  font-size: 10px; letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--nh-gold);
+  position: relative;
+  display: flex; align-items: center; justify-content: space-between; gap: 8px;
+  border-radius: var(--nh-radius) var(--nh-radius) 0 0;
+}
+.nh-panel-header::after {
+  content: ''; position: absolute; left: 8px; right: 8px; bottom: -1px; height: 1px;
+  background: linear-gradient(90deg, transparent, var(--nh-gold), transparent);
+  opacity: 0.6;
+  animation: nh-shimmer 6s linear infinite;
+}
+@keyframes nh-shimmer { 0% { opacity: 0.3; } 50% { opacity: 0.7; } 100% { opacity: 0.3; } }
+.nh-panel-body { padding: 10px 12px; font-size: 13px; line-height: 1.45; }
+
+/* Decorative gold corner marks */
+.nh-corner {
+  position: absolute; width: 12px; height: 12px; pointer-events: none;
+}
+.nh-corner svg { display: block; width: 100%; height: 100%; }
+.nh-corner.tl { top: 1px; left: 1px; }
+.nh-corner.tr { top: 1px; right: 1px; transform: scaleX(-1); }
+.nh-corner.bl { bottom: 1px; left: 1px; transform: scaleY(-1); }
+.nh-corner.br { bottom: 1px; right: 1px; transform: scale(-1, -1); }
+
+/* ── Buttons ─────────────────────────────────────────────────── */
+.nh-btn {
+  font-family: 'Cinzel', serif;
+  font-size: 10px; letter-spacing: 0.14em;
+  text-transform: uppercase;
+  padding: 6px 12px;
+  border: 1px solid var(--nh-bronze);
+  background: linear-gradient(180deg, rgba(61,37,16,0.6), rgba(31,20,10,0.8));
+  color: var(--nh-parchment);
+  border-radius: var(--nh-radius);
+  cursor: pointer;
+  transition: all .15s;
+  display: inline-flex; align-items: center; gap: 6px;
+}
+.nh-btn:hover:not(:disabled) {
+  background: linear-gradient(180deg, rgba(80,50,22,0.7), rgba(45,30,16,0.9));
+  border-color: var(--nh-accent);
+  color: var(--nh-accent-bright);
+  box-shadow: 0 0 10px var(--nh-accent-glow);
+}
+.nh-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+.nh-btn.is-primary {
+  border-color: var(--nh-accent);
+  background: linear-gradient(180deg, var(--nh-accent-soft), rgba(31,20,10,0.9));
+  color: var(--nh-accent-bright);
+}
+.nh-btn.is-primary:hover:not(:disabled) {
+  background: linear-gradient(180deg, rgba(217,168,71,0.3), rgba(31,20,10,0.9));
+  box-shadow: 0 0 14px var(--nh-accent-glow);
+}
+.nh-btn-ghost { background: transparent; border-color: rgba(139,90,43,0.5); }
+
+/* ── Building slots (circular with conic ring) ───────────────── */
+.nh-slot {
+  width: 64px; height: 64px;
+  position: relative;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer;
+  transition: transform .15s;
+  background: transparent;
+  border: none;
+  padding: 0;
+  flex-shrink: 0;
+}
+.nh-slot::before {
+  content: '';
+  position: absolute; inset: 0;
+  border-radius: 50%;
+  background: conic-gradient(
+    from 0deg,
+    var(--ring, var(--nh-accent)) 0deg,
+    color-mix(in oklab, var(--ring, var(--nh-accent)), white 30%) 90deg,
+    transparent 180deg,
+    var(--ring, var(--nh-accent)) 270deg,
+    color-mix(in oklab, var(--ring, var(--nh-accent)), white 30%) 360deg
+  );
+  animation: nh-rotate 18s linear infinite;
+}
+.nh-slot::after {
+  content: '';
+  position: absolute; inset: 2px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 30% 25%, var(--nh-bg-3), var(--nh-bg) 80%);
+  z-index: 0;
+}
+.nh-slot-art {
+  position: relative; z-index: 1;
+  width: 100%; height: 100%;
+  display: flex; align-items: center; justify-content: center;
+}
+.nh-slot:hover { transform: scale(1.07); }
+.nh-slot:hover::before { filter: brightness(1.4); }
+.nh-slot.is-empty { opacity: 0.35; }
+.nh-slot.is-empty::before {
+  background: conic-gradient(from 0deg, rgba(139,90,43,0.4), transparent 50%, rgba(139,90,43,0.4) 100%);
+  animation: none;
+}
+.nh-slot.is-building::before { animation-duration: 4s; }
+.nh-slot-level {
+  position: absolute; bottom: -2px; right: -2px;
+  width: 18px; height: 18px;
+  background: radial-gradient(circle, var(--nh-gold-bright), var(--nh-bronze) 70%);
+  border: 1px solid var(--nh-bg);
+  border-radius: 50%;
+  font-family: 'Cinzel', serif;
+  font-size: 10px; font-weight: 700;
+  color: var(--nh-bg);
+  display: flex; align-items: center; justify-content: center;
+  z-index: 3;
+}
+.nh-slot-progress {
+  position: absolute; bottom: -8px;
+  left: 50%; transform: translateX(-50%);
+  width: 70%; height: 3px;
+  background: rgba(0,0,0,0.6);
+  border-radius: 2px; overflow: hidden;
+  z-index: 4;
+}
+.nh-slot-progress > i {
+  display: block; height: 100%;
+  background: linear-gradient(90deg, var(--nh-accent), var(--nh-accent-bright));
+  box-shadow: 0 0 6px var(--nh-accent-glow);
+  transition: width 1s linear;
+}
+.nh-slot.is-selected-ring {
+  outline: 2px solid var(--nh-accent-bright);
+  outline-offset: 4px;
+}
+
+/* ── Map ─────────────────────────────────────────────────────── */
+.nh-map {
+  position: relative;
+  background: radial-gradient(ellipse at 50% 50%, rgba(40,30,20,0.6), rgba(15,9,4,0.95));
+  border: 1px solid var(--nh-bronze-dim);
+  border-radius: var(--nh-radius);
+  overflow: hidden;
+}
+.nh-map-grid {
+  position: absolute; inset: 0;
+  display: grid;
+  gap: 1px;
+  padding: 4px;
+  background: rgba(217,168,71,0.04);
+}
+.nh-tile {
+  position: relative;
+  cursor: pointer;
+  transition: filter .12s, transform .12s;
+  border: 1px solid transparent;
+  overflow: hidden;
+}
+.nh-tile::after {
+  content: ''; position: absolute; inset: 0;
+  background: linear-gradient(180deg, rgba(255,255,255,0.04), transparent 30%, rgba(0,0,0,0.25));
+  pointer-events: none;
+}
+.nh-tile.is-village    { background: linear-gradient(135deg, #6b4220, #3d2510); }
+.nh-tile.is-forest     { background: linear-gradient(135deg, #3d5a30, #1d2818); }
+.nh-tile.is-mountain   { background: linear-gradient(135deg, #4a3a2a, #1f1812); }
+.nh-tile.is-river      { background: linear-gradient(135deg, #2a4a6a, #14283d); }
+.nh-tile.is-plains     { background: linear-gradient(135deg, #5a4a30, #2a2418); }
+.nh-tile.is-ruins      { background: linear-gradient(135deg, #2a1a1a, #150c0c); }
+.nh-tile.is-oasis      { background: linear-gradient(135deg, #3a5a2a, #1a3018); }
+.nh-tile.is-deposit    { background: linear-gradient(135deg, #5a5030, #2a2820); }
+.nh-tile:hover {
+  filter: brightness(1.3);
+  border-color: var(--nh-accent);
+  z-index: 2;
+}
+.nh-tile.is-selected {
+  border-color: var(--nh-accent-bright);
+  box-shadow: 0 0 0 2px var(--nh-accent), 0 0 16px var(--nh-accent-glow);
+  z-index: 3;
+}
+.nh-tile-glyph {
+  position: absolute; inset: 0;
+  display: flex; align-items: center; justify-content: center;
+  color: rgba(255,255,255,0.55);
+  font-size: 10px; z-index: 1;
+}
+.nh-tile-army {
+  position: absolute; right: 1px; top: 1px;
+  font-size: 8px;
+  color: var(--nh-accent-bright);
+  text-shadow: 0 0 4px var(--nh-accent-glow);
+  z-index: 2;
+  font-weight: 700;
+}
+.nh-tile-enemy { color: #ff6b6b; text-shadow: 0 0 4px rgba(255,107,107,0.7); }
+.nh-tile-mine {
+  position: absolute; left: 1px; bottom: 1px;
+  width: 4px; height: 4px;
+  border-radius: 50%;
+  background: var(--nh-accent-bright);
+  box-shadow: 0 0 6px var(--nh-accent-glow);
+}
+
+/* ── HP / progress bars ──────────────────────────────────────── */
+.nh-bar {
+  height: 6px;
+  background: rgba(0,0,0,0.5);
+  border-radius: 3px;
+  overflow: hidden;
+  position: relative;
+  border: 1px solid rgba(139,90,43,0.3);
+}
+.nh-bar > i {
+  display: block; height: 100%;
+  background: var(--bar-c, var(--nh-accent));
+  box-shadow: 0 0 6px var(--bar-c, var(--nh-accent-glow));
+  transition: width .4s ease;
+}
+
+/* ── Tabs ────────────────────────────────────────────────────── */
+.nh-tabs {
+  display: flex;
+  border-bottom: 1px solid rgba(139,90,43,0.35);
+  background: linear-gradient(180deg, var(--nh-bg-1), var(--nh-bg));
+  flex-shrink: 0;
+}
+.nh-tab {
+  font-family: 'Cinzel', serif;
+  font-size: 10px; letter-spacing: 0.14em;
+  text-transform: uppercase;
+  padding: 10px 18px;
+  border: none;
+  background: transparent;
+  color: var(--nh-parchment-dim);
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  transition: all .15s;
+  display: inline-flex; align-items: center; gap: 8px;
+}
+.nh-tab:hover { color: var(--nh-gold); }
+.nh-tab.is-active {
+  color: var(--nh-accent-bright);
+  border-bottom-color: var(--nh-accent);
+  background: linear-gradient(180deg, transparent, var(--nh-accent-soft));
+}
+
+/* ── Separator ───────────────────────────────────────────────── */
+.nh-sep {
+  display: flex; align-items: center; gap: 8px;
+  color: var(--nh-bronze);
+  font-size: 11px;
+  margin: 8px 0;
+  opacity: 0.7;
+}
+.nh-sep::before, .nh-sep::after {
+  content: ''; flex: 1; height: 1px;
+  background: linear-gradient(90deg, transparent, var(--nh-bronze-dim), transparent);
+}
+
+/* ── Atmospheric embers & fog ────────────────────────────────── */
+.nh-fog {
+  position: absolute; inset: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(ellipse at 30% 20%, rgba(80,60,40,0.18), transparent 40%),
+    radial-gradient(ellipse at 70% 80%, rgba(40,30,20,0.25), transparent 50%);
+  opacity: var(--nh-atmo, 0.85);
+  mix-blend-mode: screen;
+  animation: nh-fog-drift 30s ease-in-out infinite alternate;
+}
+@keyframes nh-fog-drift {
+  0%   { transform: translate(0,0); }
+  100% { transform: translate(20px, -10px); }
+}
+.nh-embers {
+  position: absolute; inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+  opacity: var(--nh-atmo, 0.85);
+}
+.nh-ember {
+  position: absolute;
+  bottom: -10px;
+  width: 3px; height: 3px;
+  border-radius: 50%;
+  background: var(--nh-gold-bright);
+  box-shadow: 0 0 6px var(--nh-gold), 0 0 12px var(--nh-accent-glow);
+  animation: nh-ember-rise linear infinite;
+  opacity: 0;
+}
+@keyframes nh-ember-rise {
+  0%   { transform: translate(0, 0) scale(0.5); opacity: 0; }
+  10%  { opacity: 0.9; }
+  80%  { opacity: 0.7; }
+  100% { transform: translate(var(--dx, 20px), -120vh) scale(0.2); opacity: 0; }
+}
+
+/* ── Scroll ──────────────────────────────────────────────────── */
+.nh-scroll { overflow-y: auto; scrollbar-width: thin; scrollbar-color: var(--nh-bronze) transparent; }
+.nh-scroll::-webkit-scrollbar { width: 6px; }
+.nh-scroll::-webkit-scrollbar-thumb { background: var(--nh-bronze); border-radius: 3px; }
+.nh-scroll::-webkit-scrollbar-track { background: transparent; }
+
+/* ── Cost cells (green/red resource cost display) ────────────── */
+.nh-cost-ok {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 2px 7px; border-radius: 3px;
+  background: rgba(70,110,50,0.22);
+  border: 1px solid rgba(120,180,90,0.5);
+  color: #a8d77a;
+  font-family: monospace; font-size: 10px; font-weight: 600;
+}
+.nh-cost-bad {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 2px 7px; border-radius: 3px;
+  background: rgba(150,40,30,0.25);
+  border: 1px solid rgba(220,80,70,0.6);
+  color: #ff8c80;
+  font-family: monospace; font-size: 10px; font-weight: 600;
+}
+
+/* ── Misc helpers ────────────────────────────────────────────── */
+.nh-muted { color: var(--nh-parchment-dim); opacity: 0.75; }
+.nh-h-display { font-family: 'Cinzel', serif; letter-spacing: 0.06em; color: var(--nh-gold); }
+.nh-mono { font-family: monospace; }
+
+/* Fadeup entrance animation (village building slots) */
+@keyframes nh-fadeup {
+  0%   { opacity: 0; transform: translate(-50%, calc(-50% + 14px)); }
+  100% { opacity: 1; transform: translate(-50%, -50%); }
+}

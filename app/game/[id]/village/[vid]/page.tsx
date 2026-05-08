@@ -1,12 +1,15 @@
 "use client";
-import { useEffect, useState, use } from "react";
+import { useEffect, useState, use, useMemo } from "react";
 import Link from "next/link";
 import { BUILDINGS } from "@/lib/game/constants/buildings";
 import { TROOPS, TROOPS_BY_FACTION } from "@/lib/game/constants/troops";
 import type { Faction } from "@/lib/game/constants/troops";
-import { TroopPortrait, FactionCrest } from "@/components/Portrait";
 import { BuildingSlot } from "@/components/BuildingSlot";
-import { BUILDING_ICONS, BUILDING_COLORS } from "@/lib/game/constants/buildingIcons";
+import {
+  FactionEmblem, PanelCorners, TroopIcon,
+  GlyphVillage, GlyphMap, GlyphHero, GlyphNobility, GlyphBattles, GlyphEvents,
+  ResourceGlyph,
+} from "@/components/NhIcons";
 
 interface VillageData {
   id: string; name: string; owner: string; faction: string | null;
@@ -26,7 +29,7 @@ type Tab = "VIEW" | "BUILDINGS" | "BARRACKS" | "ARMIES" | "MARKET";
 
 function timeLeft(endsAt: string) {
   const diff = new Date(endsAt).getTime() - Date.now();
-  if (diff <= 0) return "✓ Listo";
+  if (diff <= 0) return "✓";
   const h = Math.floor(diff / 3600000);
   const m = Math.floor((diff % 3600000) / 60000);
   const s = Math.floor((diff % 60000) / 1000);
@@ -34,14 +37,44 @@ function timeLeft(endsAt: string) {
   return `${m}m ${s}s`;
 }
 
-const TRADE_RATES: Record<string, { icon: string; silverCost: number; label: string }> = {
-  wood:  { icon: "🌲", silverCost: 2, label: "Madera" },
-  stone: { icon: "⛏", silverCost: 2, label: "Piedra" },
-  iron:  { icon: "⚒", silverCost: 4, label: "Hierro" },
-  grain: { icon: "🌾", silverCost: 1, label: "Grano" },
-  adobe: { icon: "🧱", silverCost: 3, label: "Adobe" },
+const TRADE_RATES: Record<string, { silverCost: number; label: string; color: string }> = {
+  wood:  { silverCost: 2, label: "Madera",  color: "var(--nh-r-wood)"  },
+  stone: { silverCost: 2, label: "Piedra",  color: "var(--nh-r-stone)" },
+  iron:  { silverCost: 4, label: "Hierro",  color: "var(--nh-r-iron)"  },
+  grain: { silverCost: 1, label: "Grano",   color: "var(--nh-r-grain)" },
+  adobe: { silverCost: 3, label: "Adobe",   color: "var(--nh-r-adobe)" },
 };
 const TRADE_AMOUNTS = [50, 100, 250, 500];
+
+// Slot positions in a circle (% of container)
+const SLOT_POSITIONS = (() => {
+  const r = 37;
+  return Array.from({ length: 13 }, (_, i) => {
+    const ang = (i / 13) * 2 * Math.PI - Math.PI / 2;
+    return { x: 50 + Math.cos(ang) * r, y: 50 + Math.sin(ang) * r };
+  });
+})();
+
+// RES config
+const RES_CONFIG = [
+  { key: "wood",   label: "Madera",  color: "var(--nh-r-wood)",   glyph: "wood",   secondary: false, derived: false },
+  { key: "stone",  label: "Piedra",  color: "var(--nh-r-stone)",  glyph: "stone",  secondary: false, derived: false },
+  { key: "iron",   label: "Hierro",  color: "var(--nh-r-iron)",   glyph: "iron",   secondary: false, derived: false },
+  { key: "grain",  label: "Grano",   color: "var(--nh-r-grain)",  glyph: "grain",  secondary: false, derived: false },
+  { key: "straw",  label: "Paja",    color: "var(--nh-r-straw)",  glyph: "straw",  secondary: true,  derived: false },
+  { key: "adobe",  label: "Adobe",   color: "var(--nh-r-adobe)",  glyph: "adobe",  secondary: true,  derived: true  },
+  { key: "silver", label: "Plata",   color: "var(--nh-r-silver)", glyph: "silver", secondary: true,  derived: false },
+  { key: "gold",   label: "Oro",     color: "var(--nh-r-gold)",   glyph: "gold",   secondary: true,  derived: false },
+] as const;
+
+// Atmosphere: pre-gen embers
+const EMBERS = Array.from({ length: 22 }, (_, i) => ({
+  id: i,
+  left: `${8 + ((i * 4.3) % 84)}%`,
+  dx: `${((i * 7 + 3) % 60) - 30}px`,
+  delay: `${(i * 0.85) % 18}s`,
+  dur: `${12 + (i * 1.1) % 14}s`,
+}));
 
 export default function VillagePage({ params }: { params: Promise<{ id: string; vid: string }> }) {
   const { id, vid } = use(params);
@@ -62,10 +95,10 @@ export default function VillagePage({ params }: { params: Promise<{ id: string; 
         setLoadError(null);
       } else {
         const d = await res.json().catch(() => ({}));
-        setLoadError(`${res.status}: ${d.error ?? "Error al cargar la aldea"}`);
+        setLoadError(`${res.status}: ${d.error ?? "Error al cargar"}`);
       }
     } catch (e: any) {
-      setLoadError(`Red: ${e.message ?? "error de red"}`);
+      setLoadError(`Red: ${e.message ?? "error"}`);
     }
   }
 
@@ -89,23 +122,24 @@ export default function VillagePage({ params }: { params: Promise<{ id: string; 
     setRenaming(false);
   }
 
+  // ── Error / loading ──────────────────────────────────────────
   if (!data) return (
-    <div className="min-h-screen flex flex-col items-center justify-center gap-4 p-6">
+    <div style={{ minHeight: "100vh", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 16, padding: 24, background: "var(--nh-bg)" }}>
       {loadError ? (
         <>
-          <div className="text-5xl">⚠</div>
-          <p className="title-gold font-display text-2xl">No se puede cargar la aldea</p>
-          <p className="text-blood-bright text-sm font-mono bg-stone-900/60 px-3 py-2 rounded border border-bronze/40 max-w-lg text-center">{loadError}</p>
-          <div className="flex gap-3">
-            <button onClick={load} className="btn-medieval text-sm">↻ Reintentar</button>
-            <Link href={`/game/${id}`} className="btn-blood text-sm">← Volver al mapa</Link>
-            <Link href="/dashboard" className="btn-medieval text-sm">🏠 Inicio</Link>
+          <div style={{ fontSize: 48 }}>⚠</div>
+          <p className="nh-h-display" style={{ fontSize: 22 }}>No se puede cargar la aldea</p>
+          <p style={{ color: "#ff8a78", fontSize: 13, fontFamily: "monospace", background: "rgba(0,0,0,0.4)", padding: "8px 16px", borderRadius: 4, maxWidth: 480, textAlign: "center" }}>{loadError}</p>
+          <div style={{ display: "flex", gap: 8 }}>
+            <button onClick={load} className="nh-btn is-primary">↻ Reintentar</button>
+            <Link href={`/game/${id}`} className="nh-btn">← Mapa</Link>
+            <Link href="/dashboard" className="nh-btn">🏠 Inicio</Link>
           </div>
         </>
       ) : (
         <>
-          <div className="text-5xl animate-pulse">🏰</div>
-          <p className="title-gold font-display text-2xl">Cargando aldea…</p>
+          <div style={{ fontSize: 48, animation: "pulse 2s ease-in-out infinite" }}>🏰</div>
+          <p className="nh-h-display" style={{ fontSize: 20 }}>Cargando aldea…</p>
         </>
       )}
     </div>
@@ -113,632 +147,719 @@ export default function VillagePage({ params }: { params: Promise<{ id: string; 
 
   const { village, armies } = data;
   const faction = (village.faction ?? "PORTADORES") as Faction;
+  const factionLower = faction.toLowerCase();
   const hasMarket = village.buildings.some(b => b.type === "MARKET");
 
   const res = {
     wood: village.wood, stone: village.stone, iron: village.iron,
     grain: village.grain, straw: village.straw, adobe: village.adobe,
     silver: village.silver, gold: village.gold,
-  };
-
-  // Resource bar config (compact)
-  const RES_BAR = [
-    { key: "wood",   icon: "🌲", val: village.wood,   rate: village.woodRate,                  cap: village.warehouseCap, color: "#4ade80" },
-    { key: "stone",  icon: "⛏", val: village.stone,  rate: village.stoneRate,                 cap: village.warehouseCap, color: "#94a3b8" },
-    { key: "iron",   icon: "⚒", val: village.iron,   rate: village.ironRate,                  cap: village.warehouseCap, color: "#fb923c" },
-    { key: "grain",  icon: "🌾", val: village.grain,  rate: village.grainRate,                 cap: village.granaryCap,   color: "#facc15" },
-    { key: "straw",  icon: "🪶", val: village.straw,  rate: Math.floor(village.grainRate*0.4), cap: village.granaryCap,   color: "#fbbf24" },
-    { key: "adobe",  icon: "🧱", val: village.adobe,  rate: 0,                                 cap: village.warehouseCap, color: "#f87171" },
-    { key: "silver", icon: "🪙", val: village.silver, rate: 0,                                 cap: village.warehouseCap, color: "#7dd3fc" },
-    { key: "gold",   icon: "💰", val: village.gold,   rate: 0,                                 cap: village.warehouseCap, color: "#fde047" },
-  ];
-
-  // Building positions for circular layout (Travian-style)
-  const buildingDefs = Object.values(BUILDINGS);
-  // Center: MAIN_HALL. Surrounding ring: rest of buildings.
-  const mainHall = buildingDefs.find(b => b.key === "MAIN_HALL");
-  const otherBuildings = buildingDefs.filter(b => b.key !== "MAIN_HALL");
+  } as Record<string, number>;
 
   function getBuildingState(type: string) {
     const existing = village.buildings.find(b => b.type === type);
     const inQueue = village.buildQueues.find(q => q.buildingType === type);
-    return { level: existing?.level ?? 0, inQueue };
+    const queuePct = inQueue
+      ? Math.min(100, ((Date.now() - new Date(inQueue.endsAt).getTime() + (inQueue as any).durationMs) / ((inQueue as any).durationMs ?? 1)) * 100)
+      : undefined;
+    return { level: existing?.level ?? 0, inQueue, queuePct };
   }
 
-  // Selected building details
+  const buildingDefs = Object.values(BUILDINGS);
+  const mainHallDef = buildingDefs.find(b => b.key === "MAIN_HALL")!;
+  const surroundingDefs = buildingDefs.filter(b => b.key !== "MAIN_HALL").slice(0, 13);
+
+  // Selected building detail
   const selDef = selectedBuilding ? BUILDINGS[selectedBuilding as keyof typeof BUILDINGS] : null;
   const selState = selectedBuilding ? getBuildingState(selectedBuilding) : null;
   const selLvlDef = selDef && selState && selState.level < selDef.maxLevel ? selDef.levels[selState.level] : null;
   const canAffordSel = selLvlDef ? (
-    res.wood   >= (selLvlDef.cost.wood   || 0) &&
-    res.stone  >= (selLvlDef.cost.stone  || 0) &&
-    res.iron   >= (selLvlDef.cost.iron   || 0) &&
-    res.adobe  >= (selLvlDef.cost.adobe  || 0) &&
-    res.silver >= (selLvlDef.cost.silver || 0)
+    res.wood   >= (selLvlDef.cost.wood   ?? 0) &&
+    res.stone  >= (selLvlDef.cost.stone  ?? 0) &&
+    res.iron   >= (selLvlDef.cost.iron   ?? 0) &&
+    res.adobe  >= (selLvlDef.cost.adobe  ?? 0) &&
+    res.silver >= (selLvlDef.cost.silver ?? 0)
   ) : false;
 
+  const TABS = [
+    { key: "VIEW" as Tab,      glyph: <GlyphVillage />,  label: "Vista" },
+    { key: "BUILDINGS" as Tab, glyph: "🏗",               label: "Edificios" },
+    { key: "BARRACKS" as Tab,  glyph: <GlyphBattles />,  label: "Cuartel" },
+    { key: "ARMIES" as Tab,    glyph: "🛡",               label: "Huestes" },
+    { key: "MARKET" as Tab,    glyph: "◯",               label: hasMarket ? "Mercado" : "Mercado 🔒" },
+  ];
+
   return (
-    <div className="min-h-screen flex flex-col" style={{ background: "#0f0904" }}>
+    <div className="nh-frame" data-faction={factionLower} style={{ minHeight: "100vh", display: "flex", flexDirection: "column" }}>
 
-      {/* ── TOP HEADER ──────────────────────────────────────────── */}
-      <header
-        className="flex items-center gap-3 px-4 py-2 border-b-2 border-bronze flex-shrink-0"
-        style={{ background: "linear-gradient(180deg, #3d2510 0%, #1f140a 100%)" }}
-      >
-        <Link href={`/game/${id}`} className="text-parchment-aged hover:text-gold-bright text-sm italic flex-shrink-0">
-          ← Mapa
-        </Link>
-        <div className="flex items-center gap-2 flex-shrink-0">
-          <FactionCrest faction={faction} size="sm" />
-        </div>
-        {renaming ? (
-          <div className="flex items-center gap-2">
-            <input
-              value={newName} onChange={e => setNewName(e.target.value)}
-              className="bg-wood border border-bronze text-parchment px-2 py-0.5 font-display text-sm rounded-sm w-44"
-              onKeyDown={e => { if (e.key === "Enter") rename(); if (e.key === "Escape") setRenaming(false); }}
-              autoFocus
-            />
-            <button onClick={rename} className="text-xs btn-medieval py-0.5 px-2">✓</button>
-            <button onClick={() => setRenaming(false)} className="text-xs text-parchment-aged hover:text-parchment">✕</button>
+      {/* ── NAVBAR ─────────────────────────────────────────────── */}
+      <nav className="nh-navbar">
+        <div className="nh-portrait">
+          <div className="nh-portrait-inner">
+            <FactionEmblem faction={factionLower} size={28} />
           </div>
-        ) : (
-          <button
-            onClick={() => { setNewName(village.name); setRenaming(true); }}
-            className="font-display title-gold text-lg hover:opacity-80 text-left flex items-center gap-1.5"
-          >
-            🏰 {village.name} <span className="text-bronze text-xs">✎</span>
-          </button>
-        )}
-        {msg && (
-          <p className={`ml-auto text-sm italic font-display ${msg.ok ? "text-gold-bright" : "text-blood-bright"}`}>
-            {msg.text}
-          </p>
-        )}
-      </header>
+          <span className="nh-portrait-level">{village.buildings.length}</span>
+        </div>
 
-      {/* ── COMPACT RESOURCE BAR ────────────────────────────────── */}
-      <div
-        className="flex items-center gap-1 px-2 py-1.5 flex-shrink-0 flex-wrap border-b border-bronze/40"
-        style={{ background: "#150e06" }}
-      >
-        {RES_BAR.map((r) => {
-          const pct = Math.min(100, (r.val / r.cap) * 100);
+        <div style={{ display: "flex", flexDirection: "column", gap: 1, marginRight: 4 }}>
+          {renaming ? (
+            <input
+              value={newName} onChange={e => setNewName(e.target.value)} autoFocus
+              style={{ fontFamily: "'Cinzel', serif", fontSize: 14, color: "var(--nh-gold)", background: "rgba(0,0,0,0.5)", border: "1px solid var(--nh-bronze)", borderRadius: 3, padding: "2px 8px", width: 180 }}
+              onKeyDown={e => { if (e.key === "Enter") rename(); if (e.key === "Escape") setRenaming(false); }}
+            />
+          ) : (
+            <button
+              onClick={() => { setNewName(village.name); setRenaming(true); }}
+              style={{ fontFamily: "'Cinzel', serif", fontSize: 14, color: "var(--nh-gold)", background: "none", border: "none", cursor: "pointer", padding: 0, textAlign: "left", display: "flex", alignItems: "center", gap: 4 }}
+            >
+              {village.name}
+              <span style={{ fontSize: 9, opacity: 0.5 }}>✎</span>
+            </button>
+          )}
+          <span style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 11, fontStyle: "italic", color: "var(--nh-parchment-dim)" }}>
+            {faction} · {village.buildings.length} edificios
+          </span>
+        </div>
+
+        <div className="nh-nav-sep" />
+
+        {TABS.map((t, i) => (
+          <button
+            key={t.key}
+            className={`nh-navlink${tab === t.key ? " is-active" : ""}`}
+            onClick={() => setTab(t.key)}
+          >
+            <span className="nh-navlink-glyph" style={{ fontSize: typeof t.glyph === "string" ? 16 : undefined }}>
+              {t.glyph}
+            </span>
+            <span>{t.label}</span>
+          </button>
+        ))}
+
+        <div style={{ flex: 1 }} />
+
+        {msg && (
+          <span style={{ fontSize: 12, color: msg.ok ? "var(--nh-accent-bright)" : "#ff8a78", fontStyle: "italic", fontFamily: "'Cinzel', serif" }}>
+            {msg.text}
+          </span>
+        )}
+
+        <Link href={`/game/${id}`} className="nh-btn" style={{ padding: "4px 10px", fontSize: 11 }}>← Mapa</Link>
+      </nav>
+
+      {/* ── RESOURCE BAR ───────────────────────────────────────── */}
+      <div className="nh-resbar">
+        {RES_CONFIG.map(r => {
+          const val = res[r.key] ?? 0;
+          const cap = ["grain", "straw"].includes(r.key) ? village.granaryCap : village.warehouseCap;
+          const pct = Math.min(100, (val / cap) * 100);
+          const rate = r.key === "wood" ? village.woodRate : r.key === "stone" ? village.stoneRate
+            : r.key === "iron" ? village.ironRate : r.key === "grain" ? village.grainRate
+            : r.key === "straw" ? Math.floor(village.grainRate * 0.4) : 0;
           return (
             <div
               key={r.key}
-              className="res-cell flex items-center gap-1.5 flex-1 min-w-[78px]"
-              title={`${r.key}: ${r.val} / ${r.cap}${r.rate > 0 ? ` · +${r.rate}/h` : ""}`}
+              className={`nh-rescap${r.secondary ? " is-secondary" : ""}${r.derived ? " is-derived" : ""}`}
+              style={{ "--c": r.color } as React.CSSProperties}
+              title={`${r.label}: ${val} / ${cap}${rate ? ` · +${rate}/h` : ""}`}
             >
-              <div
-                className="w-6 h-6 rounded flex items-center justify-center flex-shrink-0 text-sm"
-                style={{
-                  background: `radial-gradient(circle, ${r.color}33 0%, transparent 70%)`,
-                  border: `1px solid ${r.color}55`,
-                }}
-              >{r.icon}</div>
-              <div className="flex-1 min-w-0">
-                <div className="flex items-baseline justify-between gap-1">
-                  <span className="font-display font-bold text-xs leading-none" style={{ color: r.color, textShadow: `0 0 6px ${r.color}55` }}>
-                    {r.val}
-                  </span>
-                  {r.rate > 0 && <span className="text-[9px] text-stone-500 leading-none">+{r.rate}/h</span>}
-                </div>
-                <div className="h-1 bg-stone-950 rounded-full overflow-hidden mt-0.5 border border-stone-900/80">
-                  <div
-                    className="h-full rounded-full transition-all"
-                    style={{
-                      width: `${pct}%`,
-                      background: `linear-gradient(90deg, ${r.color}88, ${r.color})`,
-                      boxShadow: `0 0 4px ${r.color}88`,
-                    }}
-                  />
-                </div>
+              <div className="nh-rescap-icon">
+                <span className="nh-rescap-glyph"><ResourceGlyph kind={r.glyph} /></span>
               </div>
+              <div className="nh-rescap-body">
+                <div style={{ display: "flex", alignItems: "baseline", gap: 4 }}>
+                  <span className="nh-rescap-value">{val >= 1000 ? `${(val / 1000).toFixed(1)}k` : val}</span>
+                  {rate > 0 && <span className="nh-rescap-rate">+{rate}/h</span>}
+                </div>
+                <span className="nh-rescap-label">{r.label}</span>
+              </div>
+              <div className="nh-rescap-bar"><i style={{ width: `${pct}%` }} /></div>
             </div>
           );
         })}
       </div>
 
-      {/* ── QUEUE STRIP ─────────────────────────────────────────── */}
+      {/* ── QUEUE STRIP ────────────────────────────────────────── */}
       {(village.buildQueues.length > 0 || village.trainQueues.length > 0) && (
-        <div className="flex gap-3 px-3 py-1.5 flex-shrink-0 flex-wrap border-b border-bronze/30" style={{ background: "#1a0f06" }}>
+        <div style={{
+          display: "flex", gap: 6, padding: "6px 14px", flexWrap: "wrap",
+          background: "var(--nh-bg-1)", borderBottom: "1px solid rgba(139,90,43,0.25)",
+          flexShrink: 0,
+        }}>
           {village.buildQueues.map(q => {
             const def = BUILDINGS[q.buildingType as keyof typeof BUILDINGS];
-            const icon = BUILDING_ICONS[q.buildingType] ?? "🏗";
             return (
-              <div key={q.id} className="flex items-center gap-1.5 text-xs bg-amber-950/30 border border-amber-800/40 rounded px-2 py-1">
-                <span>{icon}</span>
-                <span className="font-display text-parchment-aged">{def?.name ?? q.buildingType}</span>
-                <span className="stat-badge">Nv.{q.targetLevel}</span>
-                <span className="text-amber-400 font-bold font-display">{timeLeft(q.endsAt)}</span>
+              <div key={q.id} style={{
+                display: "inline-flex", alignItems: "center", gap: 8,
+                padding: "4px 10px", borderRadius: 3,
+                background: "rgba(0,0,0,0.4)",
+                border: "1px solid var(--nh-bronze-dim)",
+                position: "relative", overflow: "hidden", minWidth: 170,
+              }}>
+                <span style={{ fontSize: 13 }}>🏗</span>
+                <span style={{ flex: 1, fontSize: 11, color: "var(--nh-parchment)", fontFamily: "'Cinzel', serif" }}>
+                  {def?.name ?? q.buildingType} → Nv {q.targetLevel}
+                </span>
+                <span style={{ fontFamily: "monospace", fontSize: 11, color: "var(--nh-accent-bright)" }}>
+                  {timeLeft(q.endsAt)}
+                </span>
               </div>
             );
           })}
-          {village.trainQueues.map(q => (
-            <div key={q.id} className="flex items-center gap-1.5 text-xs bg-red-950/30 border border-red-800/40 rounded px-2 py-1">
-              <TroopPortrait troopType={q.troopType} size="xs" />
-              <span className="font-display text-parchment-aged">×{q.count}</span>
-              <span className="text-red-400 font-bold font-display">{timeLeft(q.endsAt)}</span>
+          {village.trainQueues.map((q, i) => (
+            <div key={i} style={{
+              display: "inline-flex", alignItems: "center", gap: 8,
+              padding: "4px 10px", borderRadius: 3,
+              background: "rgba(0,0,0,0.4)",
+              border: "1px solid rgba(180,60,60,0.4)",
+              minWidth: 150,
+            }}>
+              <span style={{ fontSize: 13 }}>⚔</span>
+              <span style={{ flex: 1, fontSize: 11, color: "var(--nh-parchment)", fontFamily: "'Cinzel', serif" }}>
+                {q.count}× {TROOPS[q.troopType]?.name ?? q.troopType}
+              </span>
+              <span style={{ fontFamily: "monospace", fontSize: 11, color: "#ff8a78" }}>
+                {timeLeft(q.endsAt)}
+              </span>
             </div>
           ))}
         </div>
       )}
 
-      {/* ── TABS ────────────────────────────────────────────────── */}
-      <div className="border-b-2 border-bronze flex overflow-x-auto flex-shrink-0" style={{ background: "#0d0703" }}>
-        {([
-          { key: "VIEW",      icon: "🏘", label: "Vista" },
-          { key: "BUILDINGS", icon: "🏗", label: "Edificios" },
-          { key: "BARRACKS",  icon: "⚔", label: "Cuartel" },
-          { key: "ARMIES",    icon: "🛡", label: "Huestes" },
-          { key: "MARKET",    icon: "🪙", label: hasMarket ? "Mercado" : "Mercado 🔒" },
-        ] as { key: Tab; icon: string; label: string }[]).map(t => (
-          <button
-            key={t.key} onClick={() => setTab(t.key)}
-            className={`px-4 py-2 text-xs font-display uppercase tracking-wider whitespace-nowrap transition-all flex-shrink-0 flex items-center gap-1.5 ${
-              tab === t.key
-                ? "text-gold-bright border-b-4 border-gold bg-[#2c1d10]"
-                : "text-parchment-dark hover:text-parchment-aged hover:bg-[#1f1409]"
-            }`}
-          >
-            <span className="text-base">{t.icon}</span>
-            <span>{t.label}</span>
-          </button>
-        ))}
-      </div>
+      {/* ── TAB CONTENT ────────────────────────────────────────── */}
+      <div style={{ flex: 1, overflow: "auto" }} className="nh-scroll">
 
-      {/* ── TAB CONTENT ─────────────────────────────────────────── */}
-      <div className="flex-1 overflow-y-auto relative">
-
-        {/* ╔═══ VISTA — visual village layout ════════════════════╗ */}
+        {/* ╔═══ VISTA ═══════════════════════════════════════════╗ */}
         {tab === "VIEW" && (
-          <div className="p-4 flex flex-col lg:flex-row gap-4 max-w-7xl mx-auto fade-up">
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 280px", gap: 10, padding: 10, height: "100%" }}>
 
-            {/* Visual village canvas */}
-            <div className="flex-1 trav-panel overflow-hidden relative" style={{ minHeight: 540 }}>
-              <div className="trav-panel-header">
-                <span>🏘 Plano de la aldea</span>
-                <span className="text-stone-500 text-[10px]">
-                  {village.buildings.length} / {Object.keys(BUILDINGS).length} edificios
-                </span>
+            {/* Atmospheric village plan */}
+            <div style={{
+              position: "relative",
+              borderRadius: "var(--nh-radius)",
+              border: "1px solid var(--nh-bronze-dim)",
+              overflow: "hidden",
+              minHeight: 500,
+              background: `
+                radial-gradient(ellipse at 50% 60%, rgba(80,55,35,0.55), rgba(15,9,4,0.95) 70%),
+                radial-gradient(ellipse at 30% 30%, rgba(60,90,55,0.18), transparent 50%),
+                conic-gradient(from 0deg at 50% 50%, transparent, rgba(217,168,71,0.04), transparent, rgba(217,168,71,0.04), transparent)
+              `,
+            }}>
+              {/* Fog */}
+              <div className="nh-fog" />
+              {/* Embers */}
+              <div className="nh-embers">
+                {EMBERS.map(e => (
+                  <span key={e.id} className="nh-ember" style={{
+                    left: e.left,
+                    ["--dx" as string]: e.dx,
+                    animationDelay: e.delay,
+                    animationDuration: e.dur,
+                  }} />
+                ))}
               </div>
 
-              {/* Scenic background */}
-              <div className="village-scene" style={{ top: "32px" }} />
-              <div className="embers" style={{ top: "32px" }} />
+              {/* Rotating ambient ring */}
+              <div style={{
+                position: "absolute", inset: 0,
+                animation: "nh-rotate 90s linear infinite",
+                background: "conic-gradient(from 0deg, transparent 70%, rgba(217,168,71,0.04) 80%, transparent 90%)",
+                pointerEvents: "none",
+              }} />
 
-              {/* Center: Main Hall (with rotating ring) */}
-              {mainHall && (
-                <div className="relative pt-12 pb-6 flex flex-col items-center z-10">
-                  <div className="hero-frame">
+              {/* Title */}
+              <div style={{
+                position: "absolute", top: 14, left: "50%", transform: "translateX(-50%)",
+                display: "flex", alignItems: "center", gap: 12, zIndex: 5,
+                fontFamily: "'Cinzel', serif", fontSize: 10, letterSpacing: "0.18em",
+                color: "var(--nh-bronze-bright)", opacity: 0.85,
+                whiteSpace: "nowrap",
+              }}>
+                <span>❖</span>
+                <span>PLANO DE ALDEA · {village.name.toUpperCase()}</span>
+                <span>❖</span>
+              </div>
+
+              {/* Compass ring (decorative) */}
+              <div style={{
+                position: "absolute", inset: "10%",
+                border: "1px dashed rgba(217,168,71,0.12)",
+                borderRadius: "50%", pointerEvents: "none",
+              }} />
+
+              {/* Main Hall — center */}
+              <div style={{ position: "absolute", left: "50%", top: "50%", transform: "translate(-50%, -50%)", zIndex: 4 }}>
+                <BuildingSlot
+                  type="MAIN_HALL"
+                  level={getBuildingState("MAIN_HALL").level}
+                  inProgress={!!getBuildingState("MAIN_HALL").inQueue}
+                  onClick={() => { setSelectedBuilding("MAIN_HALL"); setTab("BUILDINGS"); }}
+                  size={110}
+                  selected={selectedBuilding === "MAIN_HALL"}
+                />
+              </div>
+
+              {/* 13 surrounding building slots in circle */}
+              {surroundingDefs.map((def, i) => {
+                const st = getBuildingState(def.key);
+                const pos = SLOT_POSITIONS[i];
+                return (
+                  <div
+                    key={def.key}
+                    style={{
+                      position: "absolute",
+                      left: `${pos.x}%`, top: `${pos.y}%`,
+                      transform: "translate(-50%, -50%)",
+                      animation: `nh-fadeup .5s ease ${i * 0.04}s backwards`,
+                      zIndex: 3,
+                    }}
+                  >
                     <BuildingSlot
-                      type={mainHall.key}
-                      level={getBuildingState(mainHall.key).level}
-                      inProgress={!!getBuildingState(mainHall.key).inQueue}
-                      onClick={() => { setSelectedBuilding(mainHall.key); setTab("BUILDINGS"); }}
-                      size={110}
+                      type={def.key}
+                      level={st.level}
+                      inProgress={!!st.inQueue}
+                      queuePct={st.queuePct}
+                      onClick={() => { setSelectedBuilding(def.key); setTab("BUILDINGS"); }}
+                      size={62}
+                      selected={selectedBuilding === def.key}
                     />
                   </div>
-                </div>
-              )}
-
-              {/* Decorative divider with crown */}
-              <div className="relative z-10 flex justify-center mb-3">
-                <span className="text-gold-bright text-xs px-3" style={{
-                  background: "linear-gradient(90deg, transparent, rgba(184,134,47,0.15), transparent)",
-                }}>❖ ❖ ❖</span>
-              </div>
-
-              {/* Inner ring of buildings */}
-              <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-5 gap-4 px-6 pb-6 relative z-10">
-                {otherBuildings.map((def, i) => {
-                  const st = getBuildingState(def.key);
-                  return (
-                    <div
-                      key={def.key}
-                      className="flex justify-center fade-up"
-                      style={{ animationDelay: `${i * 40}ms` }}
-                    >
-                      <BuildingSlot
-                        type={def.key}
-                        level={st.level}
-                        inProgress={!!st.inQueue}
-                        onClick={() => { setSelectedBuilding(def.key); setTab("BUILDINGS"); }}
-                        size={68}
-                      />
-                    </div>
-                  );
-                })}
-              </div>
+                );
+              })}
             </div>
 
-            {/* Side panel: village summary */}
-            <div className="lg:w-80 flex-shrink-0 space-y-3">
+            {/* Right sidebar */}
+            <div style={{ display: "flex", flexDirection: "column", gap: 10, minHeight: 0 }}>
 
-              <div className="trav-panel">
-                <div className="trav-panel-header">Resumen</div>
-                <div className="p-3 space-y-2 text-xs">
-                  <div className="flex justify-between">
-                    <span className="text-stone-500">Población</span>
-                    <span className="text-parchment-aged font-display">{village.buildings.reduce((s, b) => s + b.level, 0) * 10}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-stone-500">Edificios construidos</span>
-                    <span className="text-parchment-aged font-display">{village.buildings.length}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-stone-500">Cola de construcción</span>
-                    <span className="text-amber-400 font-display">{village.buildQueues.length}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-stone-500">Cola de tropas</span>
-                    <span className="text-red-400 font-display">{village.trainQueues.length}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-stone-500">Murallas</span>
-                    <span className="text-stone-300 font-display">Nv.{village.wallLevel ?? 0}</span>
+              <div className="nh-panel">
+                <PanelCorners />
+                <div className="nh-panel-header">Resumen</div>
+                <div className="nh-panel-body" style={{ padding: "8px 12px" }}>
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr auto", gap: "4px 12px", fontSize: 12 }}>
+                    <span className="nh-muted">Habitantes</span>
+                    <span className="nh-mono">{village.buildings.reduce((s, b) => s + b.level, 0) * 10}</span>
+                    <span className="nh-muted">Edificios</span>
+                    <span className="nh-mono">{village.buildings.filter(b => b.level > 0).length} / 13</span>
+                    <span className="nh-muted">En cola</span>
+                    <span className="nh-mono" style={{ color: "var(--nh-accent-bright)" }}>{village.buildQueues.length}</span>
+                    <span className="nh-muted">Murallas</span>
+                    <span className="nh-mono">Nv.{village.wallLevel ?? 0}</span>
                   </div>
                 </div>
               </div>
 
-              {/* Production rates */}
-              <div className="trav-panel">
-                <div className="trav-panel-header">Producción / hora</div>
-                <div className="p-3 space-y-1.5 text-xs">
-                  {[
-                    { icon: "🌲", label: "Madera", val: village.woodRate, color: "#4ade80" },
-                    { icon: "⛏", label: "Piedra", val: village.stoneRate, color: "#94a3b8" },
-                    { icon: "⚒", label: "Hierro", val: village.ironRate, color: "#fb923c" },
-                    { icon: "🌾", label: "Grano", val: village.grainRate, color: "#facc15" },
-                  ].map(p => (
-                    <div key={p.label} className="flex items-center justify-between">
-                      <span className="flex items-center gap-1.5 text-stone-400">
-                        <span>{p.icon}</span> {p.label}
-                      </span>
-                      <span className="font-display font-bold" style={{ color: p.color }}>+{p.val}/h</span>
+              <div className="nh-panel">
+                <PanelCorners />
+                <div className="nh-panel-header">Producción / hora</div>
+                <div className="nh-panel-body" style={{ padding: "8px 12px" }}>
+                  {([
+                    { label: "Madera", color: "var(--nh-r-wood)",  rate: village.woodRate  },
+                    { label: "Piedra", color: "var(--nh-r-stone)", rate: village.stoneRate },
+                    { label: "Hierro", color: "var(--nh-r-iron)",  rate: village.ironRate  },
+                    { label: "Grano",  color: "var(--nh-r-grain)", rate: village.grainRate },
+                  ] as const).map(p => (
+                    <div key={p.label} style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 5 }}>
+                      <span style={{ width: 10, height: 10, borderRadius: "50%", background: p.color, boxShadow: `0 0 6px ${p.color}`, flexShrink: 0 }} />
+                      <span style={{ flex: 1, fontSize: 12, color: "var(--nh-parchment-dim)" }}>{p.label}</span>
+                      <span className="nh-mono" style={{ fontSize: 12, color: p.color }}>+{p.rate}/h</span>
                     </div>
                   ))}
                 </div>
               </div>
 
-              {/* Production chain */}
-              <div className="trav-panel">
-                <div className="trav-panel-header">Cadena de producción</div>
-                <div className="p-3 space-y-1.5 text-[11px] text-stone-500 leading-relaxed">
-                  <p>Los campos producen <strong className="text-amber-300">paja</strong> (40% del ratio de grano) automáticamente.</p>
-                  <p>El exceso de paja se convierte en <strong className="text-red-300">adobe</strong>, material básico de construcción.</p>
-                  <p>La <strong className="text-sky-300">plata</strong> se gasta en el Mercado para comprar recursos.</p>
+              <div className="nh-panel" style={{ flex: 1, minHeight: 0 }}>
+                <PanelCorners />
+                <div className="nh-panel-header">Cadena de producción</div>
+                <div className="nh-panel-body nh-scroll" style={{ overflow: "auto" }}>
+                  <p style={{ fontStyle: "italic", fontSize: 13, color: "var(--nh-parchment-dim)", lineHeight: 1.5, margin: 0 }}>
+                    «Los aserraderos talan los robles negros del valle. La paja del campo, secada al sol del invierno, se mezcla con barro para formar el adobe con el que tus muros resisten el asedio.»
+                  </p>
+                  <div className="nh-sep">❖ ❖ ❖</div>
+                  <div className="nh-mono" style={{ fontSize: 11, color: "var(--nh-bronze-bright)", lineHeight: 1.7 }}>
+                    paja → adobe<br />
+                    grano + plata → mercado<br />
+                    hierro + madera → forja
+                  </div>
                 </div>
               </div>
 
             </div>
-
           </div>
         )}
 
-        {/* ╔═══ EDIFICIOS — building grid + selected detail ══════╗ */}
+        {/* ╔═══ EDIFICIOS ════════════════════════════════════════╗ */}
         {tab === "BUILDINGS" && (
-          <div className="p-4 max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-4">
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 360px", gap: 10, padding: 10, height: "100%" }}>
 
-            {/* Grid of buildings */}
-            <div className="lg:col-span-2 trav-panel">
-              <div className="trav-panel-header">
-                <span>🏗 Edificios disponibles</span>
-                <span className="text-stone-500 text-[10px]">{village.buildings.length} / {Object.keys(BUILDINGS).length}</span>
+            <div className="nh-panel">
+              <PanelCorners />
+              <div className="nh-panel-header">
+                <span>Solar de la aldea · {Object.keys(BUILDINGS).length} edificios</span>
+                <span className="nh-mono" style={{ fontSize: 10, color: "var(--nh-parchment-dim)" }}>
+                  {village.buildings.filter(b => b.level > 0).length} construidos
+                </span>
               </div>
-              <div className="p-3 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-                {Object.values(BUILDINGS).map(def => {
-                  const st = getBuildingState(def.key);
-                  const isSelected = selectedBuilding === def.key;
-                  const colorRing = BUILDING_COLORS[def.key]?.ring ?? "#8b5a2b";
-                  return (
-                    <button
-                      key={def.key}
-                      onClick={() => setSelectedBuilding(def.key)}
-                      className={`flex flex-col items-center gap-1.5 p-2 rounded transition-all ${
-                        isSelected ? "bg-amber-950/40 ring-2" : "hover:bg-stone-900/50"
-                      }`}
-                      style={isSelected ? { boxShadow: `0 0 12px ${colorRing}88` } : undefined}
-                    >
-                      <BuildingSlot
-                        type={def.key}
-                        level={st.level}
-                        inProgress={!!st.inQueue}
-                        size={56}
-                      />
-                      <div className="text-center">
-                        <p className="text-[10px] text-parchment-aged truncate max-w-[80px]">{def.name}</p>
+              <div className="nh-panel-body" style={{ padding: 14 }}>
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(88px, 1fr))", gap: 12 }}>
+                  {buildingDefs.map(def => {
+                    const st = getBuildingState(def.key);
+                    return (
+                      <div key={def.key} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 5 }}>
+                        <BuildingSlot
+                          type={def.key} level={st.level}
+                          inProgress={!!st.inQueue} queuePct={st.queuePct}
+                          size={56} onClick={() => setSelectedBuilding(def.key)}
+                          selected={selectedBuilding === def.key}
+                        />
+                        <span style={{
+                          fontFamily: "'Cinzel', serif", fontSize: 9,
+                          letterSpacing: "0.06em", color: st.level > 0 ? "var(--nh-parchment)" : "var(--nh-parchment-dim)",
+                          textAlign: "center", lineHeight: 1.2,
+                        }}>
+                          {def.name}
+                        </span>
                         {st.inQueue && (
-                          <p className="text-[9px] text-amber-400 font-display">{timeLeft(st.inQueue.endsAt)}</p>
+                          <span className="nh-mono" style={{ fontSize: 9, color: "var(--nh-accent-bright)" }}>
+                            {timeLeft(st.inQueue.endsAt)}
+                          </span>
                         )}
                       </div>
-                    </button>
-                  );
-                })}
+                    );
+                  })}
+                </div>
               </div>
             </div>
 
             {/* Detail panel */}
-            <div className="trav-panel self-start">
-              <div className="trav-panel-header">
-                {selDef ? selDef.name : "Detalle"}
+            <div className="nh-panel" style={{ alignSelf: "start" }}>
+              <PanelCorners />
+              <div className="nh-panel-header">
+                {selDef ? selDef.name : "Selecciona un edificio"}
               </div>
-              <div className="p-3 space-y-3">
-                {!selDef && (
-                  <p className="text-xs text-stone-500 italic text-center py-6">
-                    Selecciona un edificio para ver detalles, costes y construir.
+              <div className="nh-panel-body">
+                {!selDef ? (
+                  <p className="nh-muted" style={{ fontStyle: "italic", fontSize: 12, textAlign: "center", padding: "24px 0" }}>
+                    Haz clic en un edificio para ver detalles y construirlo.
                   </p>
-                )}
-                {selDef && selState && (
+                ) : selState && (
                   <>
-                    <div className="flex items-center gap-3">
-                      <BuildingSlot
-                        type={selDef.key}
-                        level={selState.level}
-                        inProgress={!!selState.inQueue}
-                        size={72}
-                      />
-                      <div className="flex-1 min-w-0">
-                        <p className="text-[10px] text-stone-500 uppercase tracking-wider">Nivel</p>
-                        <p className="font-display text-2xl text-gold-bright">{selState.level} <span className="text-stone-600 text-sm">/ {selDef.maxLevel}</span></p>
-                        <div className="h-1.5 bg-stone-900 rounded-full overflow-hidden border border-bronze/30 mt-1">
-                          <div className="h-full bg-gradient-to-r from-amber-700 to-amber-400 rounded-full" style={{ width: `${(selState.level / selDef.maxLevel) * 100}%` }} />
+                    {/* Icon + level */}
+                    <div style={{ display: "flex", gap: 14, alignItems: "center", marginBottom: 14 }}>
+                      <BuildingSlot type={selDef.key} level={selState.level} size={84} />
+                      <div style={{ flex: 1 }}>
+                        <div style={{ fontFamily: "'Cinzel', serif", fontSize: 10, color: "var(--nh-parchment-dim)", letterSpacing: "0.1em", textTransform: "uppercase" }}>
+                          {selDef.key}
+                        </div>
+                        <div style={{ fontStyle: "italic", fontSize: 13, color: "var(--nh-parchment-dim)", lineHeight: 1.4, marginTop: 4 }}>
+                          {selDef.description}
                         </div>
                       </div>
                     </div>
 
-                    <p className="text-xs text-stone-400 italic leading-relaxed">{selDef.description}</p>
+                    {/* Level bar (20 pips) */}
+                    <div style={{ marginBottom: 12 }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", fontFamily: "'Cinzel', serif", fontSize: 10, letterSpacing: "0.1em", marginBottom: 4 }}>
+                        <span className="nh-muted">NIVEL {selState.level}</span>
+                        <span style={{ color: "var(--nh-accent-bright)" }}>MÁX {selDef.maxLevel}</span>
+                      </div>
+                      <div style={{ display: "flex", gap: 2, height: 10, padding: 1, border: "1px solid var(--nh-bronze-dim)", borderRadius: 3, background: "rgba(0,0,0,0.5)" }}>
+                        {Array.from({ length: selDef.maxLevel }).map((_, i) => (
+                          <span key={i} style={{
+                            flex: 1,
+                            background: i < selState.level ? "linear-gradient(180deg, var(--nh-accent-bright), var(--nh-accent))" : "transparent",
+                            boxShadow: i < selState.level ? "0 0 4px var(--nh-accent-glow)" : "none",
+                            borderRadius: 1,
+                          }} />
+                        ))}
+                      </div>
+                    </div>
 
+                    {/* Build / queue status */}
                     {selState.inQueue ? (
-                      <div className="border border-amber-800/40 bg-amber-950/30 rounded p-2 text-center">
-                        <p className="text-[10px] text-stone-500 uppercase">Construyendo</p>
-                        <p className="font-display text-amber-300 text-base">Nv.{selState.inQueue.targetLevel}</p>
-                        <p className="font-display text-amber-400 text-sm font-bold">{timeLeft(selState.inQueue.endsAt)}</p>
+                      <div style={{ padding: 12, background: "var(--nh-accent-soft)", border: "1px solid var(--nh-accent)", borderRadius: 3, marginBottom: 10 }}>
+                        <div style={{ display: "flex", justifyContent: "space-between", fontFamily: "'Cinzel', serif", fontSize: 11, marginBottom: 6 }}>
+                          <span style={{ color: "var(--nh-accent-bright)" }}>OBRA EN CURSO · NV {selState.inQueue.targetLevel}</span>
+                          <span className="nh-mono" style={{ color: "var(--nh-accent-bright)" }}>{timeLeft(selState.inQueue.endsAt)}</span>
+                        </div>
+                        <div className="nh-bar" style={{ "--bar-c": "var(--nh-accent-bright)" } as React.CSSProperties}>
+                          <i style={{ width: `${selState.queuePct ?? 50}%` }} />
+                        </div>
                       </div>
                     ) : selState.level < selDef.maxLevel && selLvlDef ? (
                       <>
-                        <div className="space-y-1.5">
-                          <p className="text-[10px] text-stone-500 uppercase tracking-wider">Coste para Nv.{selState.level + 1}</p>
-                          <div className="grid grid-cols-2 gap-1.5">
-                            {[
-                              { k: "wood",   icon: "🌲", v: selLvlDef.cost.wood   },
-                              { k: "stone",  icon: "⛏", v: selLvlDef.cost.stone  },
-                              { k: "iron",   icon: "⚒", v: selLvlDef.cost.iron   },
-                              { k: "adobe",  icon: "🧱", v: selLvlDef.cost.adobe  },
-                              { k: "silver", icon: "🪙", v: selLvlDef.cost.silver },
-                            ].filter(c => c.v > 0).map(c => {
-                              const have = res[c.k as keyof typeof res] ?? 0;
-                              const ok = have >= c.v;
+                        <div style={{ marginBottom: 10 }}>
+                          <div style={{ fontFamily: "'Cinzel', serif", fontSize: 10, letterSpacing: "0.1em", color: "var(--nh-parchment-dim)", marginBottom: 6 }}>
+                            COSTE PARA NIVEL {selState.level + 1}
+                          </div>
+                          <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
+                            {([
+                              { k: "wood",   v: selLvlDef.cost.wood   ?? 0 },
+                              { k: "stone",  v: selLvlDef.cost.stone  ?? 0 },
+                              { k: "iron",   v: selLvlDef.cost.iron   ?? 0 },
+                              { k: "adobe",  v: selLvlDef.cost.adobe  ?? 0 },
+                              { k: "silver", v: selLvlDef.cost.silver ?? 0 },
+                            ] as const).filter(c => c.v > 0).map(c => {
+                              const have = res[c.k] ?? 0;
                               return (
-                                <div key={c.k} className={`flex items-center justify-between text-xs px-2 py-1 rounded border ${ok ? "border-emerald-700/40 bg-emerald-950/20" : "border-red-700/40 bg-red-950/20"}`}>
-                                  <span>{c.icon}</span>
-                                  <span className={`font-display font-bold ${ok ? "text-emerald-300" : "text-red-300"}`}>
-                                    {c.v}
-                                  </span>
-                                </div>
+                                <span key={c.k} className={have >= c.v ? "nh-cost-ok" : "nh-cost-bad"}>
+                                  <span style={{ width: 6, height: 6, borderRadius: "50%", background: `var(--nh-r-${c.k})`, boxShadow: `0 0 4px var(--nh-r-${c.k})` }} />
+                                  {c.v.toLocaleString()}
+                                </span>
                               );
                             })}
                           </div>
-                          <p className="text-[10px] text-stone-500 text-center">⏳ {Math.ceil(selLvlDef.time / 60)} min</p>
+                          <div className="nh-mono" style={{ fontSize: 11, color: "var(--nh-parchment-dim)", marginTop: 8 }}>
+                            ⏳ {Math.floor(selLvlDef.time / 60)}m {selLvlDef.time % 60}s
+                          </div>
                         </div>
                         <button
-                          onClick={() => doAction("BUILD", { buildingType: selDef.key })}
+                          className={`nh-btn is-primary${!canAffordSel ? "" : ""}`}
+                          style={{ width: "100%" }}
                           disabled={!canAffordSel}
-                          className={`w-full btn-medieval text-sm py-2 ${!canAffordSel ? "opacity-40" : ""}`}
+                          onClick={() => doAction("BUILD", { buildingType: selDef.key })}
                         >
-                          {selState.level === 0 ? "🏗 Construir" : `⬆ Mejorar a Nv.${selState.level + 1}`}
+                          {selState.level === 0 ? "Construir" : `Mejorar a nivel ${selState.level + 1}`}
                         </button>
                       </>
                     ) : (
-                      <p className="text-center text-emerald-400 font-display text-sm py-2">✓ Nivel máximo alcanzado</p>
+                      <div style={{ textAlign: "center", fontFamily: "'Cinzel', serif", fontSize: 12, color: "var(--nh-gold)", letterSpacing: "0.14em", padding: 14 }}>
+                        ✦ NIVEL MÁXIMO ALCANZADO ✦
+                      </div>
                     )}
                   </>
                 )}
               </div>
             </div>
-
           </div>
         )}
 
-        {/* ╔═══ CUARTEL ════════════════════════════════════════════╗ */}
+        {/* ╔═══ CUARTEL ═════════════════════════════════════════╗ */}
         {tab === "BARRACKS" && (
-          <div className="p-4 max-w-5xl mx-auto">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              {TROOPS_BY_FACTION[faction].map(key => {
-                const troop = TROOPS[key];
-                if (!troop) return null;
-                const totalCost = (n: number) => Object.entries(troop.cost).filter(([, v]) => v > 0)
-                  .map(([k, v]) => ({ k, v: v * n }));
-                return (
-                  <div key={key} className="trav-panel">
-                    <div className="p-3 flex gap-3">
-                      <div className="flex-shrink-0">
-                        <TroopPortrait troopType={key} size="lg" />
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 10, padding: 10, alignContent: "start" }}>
+            {TROOPS_BY_FACTION[faction].map(key => {
+              const troop = TROOPS[key];
+              if (!troop) return null;
+              const canAfford = (n: number) => Object.entries(troop.cost).every(([k, v]) => (res[k] ?? 0) >= v * n);
+              const ringColors: Record<string, string> = {
+                OFF: "#d97142", DEF: "#3a7bd9", SPY: "#9333ea", SIEGE: "#d97500",
+              };
+              const ringColor = ringColors[troop.role] ?? "#d97142";
+              return (
+                <div key={key} className="nh-panel">
+                  <PanelCorners />
+                  <div className="nh-panel-header">
+                    <span>{troop.name}</span>
+                    <span className="nh-mono" style={{ fontSize: 11, color: "var(--nh-accent-bright)" }}>
+                      ×{(data?.armies ?? armies).flatMap(a => a.troops).filter(t => t.type === key).reduce((s, t) => s + t.count, 0) || 0}
+                    </span>
+                  </div>
+                  <div className="nh-panel-body">
+                    <div style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
+                      {/* Circular portrait */}
+                      <div style={{
+                        width: 56, height: 56, padding: 6, borderRadius: "50%",
+                        background: "radial-gradient(circle at 30% 25%, var(--nh-bg-3), var(--nh-bg))",
+                        border: `2px solid ${ringColor}`, boxShadow: `0 0 10px ${ringColor}40`,
+                        color: ringColor, flexShrink: 0,
+                      }}>
+                        <TroopIcon type={key} size={44} c={ringColor} />
                       </div>
-                      <div className="flex-1 min-w-0 space-y-1.5">
-                        <div className="flex items-start justify-between gap-2">
-                          <div>
-                            <h3 className="font-display text-parchment-aged text-sm leading-tight">{troop.name}</h3>
-                            <span className="stat-badge">{troop.role}</span>
-                          </div>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ fontFamily: "'Cinzel', serif", fontSize: 9, letterSpacing: "0.14em", color: ringColor, textTransform: "uppercase" }}>
+                          {troop.role === "OFF" ? "Ofensivo" : troop.role === "DEF" ? "Defensivo" : troop.role === "SPY" ? "Reconocimiento" : "Asedio"}
                         </div>
-                        <p className="text-[10px] text-stone-500 italic line-clamp-2">{troop.description}</p>
-                        <div className="grid grid-cols-4 gap-1 text-[10px] text-center">
-                          <div className="bg-red-950/30 border border-red-800/30 rounded px-1 py-0.5">
-                            <p className="text-stone-500 text-[9px]">ATK</p>
-                            <p className="text-red-300 font-display font-bold">{troop.attack}</p>
-                          </div>
-                          <div className="bg-blue-950/30 border border-blue-800/30 rounded px-1 py-0.5">
-                            <p className="text-stone-500 text-[9px]">DEF</p>
-                            <p className="text-blue-300 font-display font-bold">{troop.defense}</p>
-                          </div>
-                          <div className="bg-cyan-950/30 border border-cyan-800/30 rounded px-1 py-0.5">
-                            <p className="text-stone-500 text-[9px]">VEL</p>
-                            <p className="text-cyan-300 font-display font-bold">{troop.speed}</p>
-                          </div>
-                          <div className="bg-amber-950/30 border border-amber-800/30 rounded px-1 py-0.5">
-                            <p className="text-stone-500 text-[9px]">⏳</p>
-                            <p className="text-amber-300 font-display font-bold">{troop.trainTime}s</p>
-                          </div>
-                        </div>
-                        <div className="flex flex-wrap gap-1 text-[10px]">
-                          {Object.entries(troop.cost).filter(([, v]) => v > 0).map(([k, v]) => {
-                            const icons: Record<string, string> = { wood: "🌲", stone: "⛏", iron: "⚒", grain: "🌾", silver: "🪙" };
-                            const current = res[k as keyof typeof res] ?? 0;
-                            const ok = current >= v;
-                            return (
-                              <span key={k} className={`px-1.5 py-0.5 rounded border ${ok ? "border-emerald-700/40 text-emerald-300 bg-emerald-950/20" : "border-red-700/40 text-red-300 bg-red-950/20"}`}>
-                                {icons[k] ?? k} {v}
-                              </span>
-                            );
-                          })}
-                        </div>
-                        <div className="flex gap-1 pt-1">
-                          {[1, 5, 10, 50].map(n => {
-                            const costs = totalCost(n);
-                            const canAfford = costs.every(({ k, v }) => (res[k as keyof typeof res] ?? 0) >= v);
-                            return (
-                              <button
-                                key={n}
-                                onClick={() => doAction("TRAIN", { troopType: key, count: n })}
-                                disabled={!canAfford}
-                                className={`flex-1 text-[10px] py-1 rounded border font-display transition-all ${
-                                  canAfford
-                                    ? "border-amber-700/50 text-amber-200 bg-amber-950/30 hover:bg-amber-900/50"
-                                    : "border-stone-800/40 text-stone-600 bg-stone-950/30 cursor-not-allowed"
-                                }`}
-                              >
-                                +{n}
-                              </button>
-                            );
-                          })}
+                        <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 3, marginTop: 5 }}>
+                          {[
+                            { label: "ATQ", val: troop.attack,   color: "#ff8a78" },
+                            { label: "DEF", val: troop.defense,  color: "#7aaaff" },
+                            { label: "VEL", val: troop.speed,    color: "#7adfff" },
+                            { label: "⏳",  val: `${Math.floor(troop.trainTime / 60)}m`, color: "var(--nh-accent-bright)" },
+                          ].map(st => (
+                            <div key={st.label} style={{
+                              display: "flex", flexDirection: "column", alignItems: "center",
+                              padding: "3px 4px", borderRadius: 3,
+                              border: `1px solid ${st.color}40`, background: "rgba(0,0,0,0.3)",
+                            }}>
+                              <span style={{ fontFamily: "'Cinzel', serif", fontSize: 8, color: "var(--nh-parchment-dim)", letterSpacing: "0.1em" }}>{st.label}</span>
+                              <span className="nh-mono" style={{ fontSize: 12, color: st.color, fontWeight: 700 }}>{st.val}</span>
+                            </div>
+                          ))}
                         </div>
                       </div>
                     </div>
+
+                    <div style={{ display: "flex", gap: 4, flexWrap: "wrap", marginTop: 10 }}>
+                      {Object.entries(troop.cost).filter(([, v]) => v > 0).map(([k, v]) => {
+                        const have = res[k] ?? 0;
+                        return (
+                          <span key={k} className={have >= v ? "nh-cost-ok" : "nh-cost-bad"}>
+                            <span style={{ width: 6, height: 6, borderRadius: "50%", background: `var(--nh-r-${k})`, boxShadow: `0 0 4px var(--nh-r-${k})` }} />
+                            {v.toLocaleString()}
+                          </span>
+                        );
+                      })}
+                    </div>
+
+                    <div style={{ display: "flex", gap: 4, marginTop: 10 }}>
+                      {[1, 5, 10, 50].map(n => (
+                        <button key={n} className="nh-btn" style={{ flex: 1, padding: "6px 0" }}
+                          disabled={!canAfford(n)}
+                          onClick={() => doAction("TRAIN", { troopType: key, count: n })}>
+                          +{n}
+                        </button>
+                      ))}
+                    </div>
                   </div>
-                );
-              })}
-            </div>
+                </div>
+              );
+            })}
           </div>
         )}
 
-        {/* ╔═══ HUESTES ════════════════════════════════════════════╗ */}
+        {/* ╔═══ HUESTES ═════════════════════════════════════════╗ */}
         {tab === "ARMIES" && (
-          <div className="p-4 max-w-5xl mx-auto space-y-3">
-            {armies.length === 0 && (
-              <div className="trav-panel">
-                <div className="p-8 text-center space-y-2">
-                  <div className="text-5xl">⚔</div>
-                  <p className="font-display text-parchment-aged">No hay huestes en esta aldea.</p>
-                  <p className="text-stone-500 text-sm">Recluta tropas en el Cuartel; aparecerán aquí al terminar.</p>
+          <div style={{ padding: 10 }}>
+            {armies.length === 0 ? (
+              <div className="nh-panel" style={{ margin: "0 auto", maxWidth: 480 }}>
+                <PanelCorners />
+                <div className="nh-panel-body" style={{ textAlign: "center", padding: "40px 24px" }}>
+                  <div style={{ fontSize: 48, marginBottom: 12 }}>⚔</div>
+                  <p className="nh-h-display" style={{ marginBottom: 6 }}>Sin huestes</p>
+                  <p className="nh-muted" style={{ fontSize: 12 }}>Recluta tropas en el Cuartel.</p>
                 </div>
+              </div>
+            ) : (
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 10, alignContent: "start" }}>
+                {armies.map(army => {
+                  const sColor = army.stamina > 60 ? "#7adfb0" : army.stamina > 30 ? "#e8c84a" : "#ff8a78";
+                  return (
+                    <div key={army.id} className="nh-panel">
+                      <PanelCorners />
+                      <div className="nh-panel-header">
+                        <span>{army.owner === "PLAYER" ? "⚔ Tu hueste" : "☠ Hueste enemiga"}</span>
+                        <span style={{ fontSize: 10, color: "var(--nh-parchment-dim)", fontStyle: "italic" }}>
+                          {army.isMoving ? "En marcha" : army.isResting ? "Descansando" : "Estacionada"}
+                        </span>
+                      </div>
+                      <div className="nh-panel-body">
+                        <div style={{ marginBottom: 10 }}>
+                          <div style={{ display: "flex", justifyContent: "space-between", fontFamily: "'Cinzel', serif", fontSize: 10, marginBottom: 4 }}>
+                            <span className="nh-muted">RESISTENCIA</span>
+                            <span style={{ color: sColor }}>{army.stamina}%</span>
+                          </div>
+                          <div className="nh-bar" style={{ "--bar-c": sColor } as React.CSSProperties}>
+                            <i style={{ width: `${army.stamina}%` }} />
+                          </div>
+                        </div>
+                        <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                          {army.troops.map(t => (
+                            <div key={t.type} style={{ position: "relative", width: 44, height: 44 }}>
+                              <div style={{
+                                width: "100%", height: "100%", borderRadius: "50%", padding: 4,
+                                background: "radial-gradient(circle at 30% 25%, var(--nh-bg-3), var(--nh-bg))",
+                                border: "2px solid var(--nh-accent)", color: "var(--nh-accent)",
+                              }}>
+                                <TroopIcon type={t.type} size={36} c="var(--nh-accent)" />
+                              </div>
+                              <span style={{
+                                position: "absolute", bottom: -4, right: -4,
+                                background: "var(--nh-bg)", border: "1px solid var(--nh-accent)",
+                                borderRadius: 3, padding: "1px 4px",
+                                fontSize: 9, fontFamily: "monospace", fontWeight: 700,
+                                color: "var(--nh-accent-bright)",
+                              }}>×{t.count}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
             )}
-            {armies.map(army => (
-              <div key={army.id} className="trav-panel">
-                <div className="trav-panel-header">
-                  <span className={army.owner === "PLAYER" ? "text-gold-bright" : "text-blood-bright"}>
-                    {army.owner === "PLAYER" ? "⚔ Tu hueste" : "☠ Hueste enemiga"}
-                  </span>
-                  <div className="flex items-center gap-2">
-                    {army.isMoving && <span className="stat-badge text-blue-300">🚶 En marcha</span>}
-                    {army.isResting && <span className="stat-badge text-emerald-300">💤 Descansando</span>}
-                    {army.isForaging && <span className="stat-badge text-yellow-300">🌾 Forrajeando</span>}
-                  </div>
-                </div>
-                <div className="p-3 space-y-3">
-                  <div className="flex items-center gap-2">
-                    <span className="text-stone-500 text-xs">Estamina</span>
-                    <div className="flex-1 bg-stone-900 rounded-full h-2 overflow-hidden border border-bronze/20">
-                      <div
-                        className={`h-full rounded-full ${army.stamina > 60 ? "bg-emerald-500" : army.stamina > 30 ? "bg-yellow-500" : "bg-red-500"}`}
-                        style={{ width: `${army.stamina}%` }}
-                      />
-                    </div>
-                    <span className="text-xs text-parchment-aged font-display">{army.stamina}%</span>
-                  </div>
-                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
-                    {army.troops.map(t => (
-                      <div key={t.type} className="flex items-center gap-2 bg-stone-950/50 border border-bronze/20 rounded p-2">
-                        <TroopPortrait troopType={t.type} size="sm" count={t.count} />
-                        <div className="min-w-0 flex-1">
-                          <p className="text-[10px] text-parchment-aged truncate">{TROOPS[t.type]?.name ?? t.type}</p>
-                          {TROOPS[t.type] && (
-                            <p className="text-[9px] text-stone-500">⚔{TROOPS[t.type].attack} 🛡{TROOPS[t.type].defense}</p>
-                          )}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            ))}
           </div>
         )}
 
-        {/* ╔═══ MERCADO ════════════════════════════════════════════╗ */}
+        {/* ╔═══ MERCADO ═════════════════════════════════════════╗ */}
         {tab === "MARKET" && (
-          <div className="p-4 max-w-4xl mx-auto space-y-3">
+          <div style={{ padding: 10 }}>
             {!hasMarket ? (
-              <div className="trav-panel">
-                <div className="p-8 text-center space-y-3">
-                  <div className="text-5xl">🔒</div>
-                  <h2 className="font-display title-gold text-xl">Mercado no construido</h2>
-                  <p className="text-stone-500 text-sm">Construye un <strong className="text-gold-bright">Mercado</strong> en la pestaña de Edificios para comerciar.</p>
-                  <button onClick={() => setTab("BUILDINGS")} className="btn-medieval">🏗 Ir a edificios</button>
+              <div className="nh-panel" style={{ margin: "0 auto", maxWidth: 480 }}>
+                <PanelCorners />
+                <div className="nh-panel-body" style={{ textAlign: "center", padding: "40px 24px" }}>
+                  <div style={{ fontSize: 48, marginBottom: 12 }}>🔒</div>
+                  <p className="nh-h-display" style={{ marginBottom: 8 }}>Mercado no construido</p>
+                  <p className="nh-muted" style={{ fontSize: 12, marginBottom: 16 }}>Construye un Mercado en la pestaña de Edificios.</p>
+                  <button className="nh-btn is-primary" onClick={() => setTab("BUILDINGS")}>🏗 Ir a edificios</button>
                 </div>
               </div>
             ) : (
               <>
-                <div className="trav-panel">
-                  <div className="trav-panel-header">🪙 Mercado de Nahkor</div>
-                  <div className="p-3 flex items-center justify-between">
-                    <p className="text-stone-500 text-xs">Compra recursos con plata a precio fijo de gremios.</p>
-                    <div className="text-right">
-                      <p className="text-[10px] text-stone-500 uppercase">Plata</p>
-                      <p className="font-display text-2xl text-sky-300" style={{ textShadow: "0 0 8px rgba(125,211,252,0.4)" }}>{village.silver}</p>
+                {/* Silver balance */}
+                <div style={{
+                  display: "flex", alignItems: "center", gap: 16,
+                  padding: "14px 18px", marginBottom: 12,
+                  background: `radial-gradient(ellipse at 50% 50%, rgba(109,184,217,0.18), transparent 70%), linear-gradient(180deg, var(--nh-bg-2), var(--nh-bg-1))`,
+                  border: "1px solid rgba(136,212,240,0.3)", borderRadius: "var(--nh-radius-lg)",
+                }}>
+                  <div style={{
+                    width: 52, height: 52, borderRadius: "50%",
+                    background: "radial-gradient(circle at 30% 25%, #d8e8f4, #6db8d9 60%, #2c5b78 100%)",
+                    boxShadow: "0 0 24px rgba(109,212,240,0.4), inset 0 -2px 6px rgba(0,0,0,0.5)",
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                    color: "#152538", fontFamily: "'Cinzel', serif", fontSize: 22, fontWeight: 800,
+                  }}>◯</div>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontFamily: "'Cinzel', serif", fontSize: 10, color: "var(--nh-parchment-dim)", letterSpacing: "0.18em" }}>SALDO DEL TESORO</div>
+                    <div style={{ fontFamily: "'Cinzel', serif", fontSize: 26, color: "#9bd0e8", textShadow: "0 0 12px rgba(109,212,240,0.4)" }}>
+                      {village.silver.toLocaleString()} <span style={{ fontSize: 13, color: "var(--nh-parchment-dim)" }}>plata</span>
                     </div>
                   </div>
+                  <div style={{ textAlign: "right" }}>
+                    <div style={{ fontFamily: "'Cinzel', serif", fontSize: 10, color: "var(--nh-parchment-dim)", letterSpacing: "0.18em" }}>TARIFA</div>
+                    <div className="nh-mono" style={{ fontSize: 14, color: "var(--nh-gold)" }}>1 ↔ plata</div>
+                  </div>
                 </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: 10 }}>
                   {Object.entries(TRADE_RATES).map(([resource, rate]) => {
-                    const current = res[resource as keyof typeof res] ?? 0;
+                    const current = res[resource] ?? 0;
                     return (
-                      <div key={resource} className="trav-panel">
-                        <div className="p-3 space-y-2">
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-2">
-                              <div className="w-10 h-10 rounded bg-stone-900/60 border border-bronze/40 flex items-center justify-center text-xl">
-                                {rate.icon}
+                      <div key={resource} className="nh-panel">
+                        <PanelCorners />
+                        <div className="nh-panel-header">
+                          <span>{rate.label}</span>
+                          <span className="nh-mono" style={{ fontSize: 11, color: rate.color }}>
+                            {current.toLocaleString()}
+                          </span>
+                        </div>
+                        <div className="nh-panel-body">
+                          <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 10 }}>
+                            <div style={{
+                              width: 32, height: 32, borderRadius: "50%",
+                              background: `radial-gradient(circle at 30% 25%, color-mix(in oklab, ${rate.color}, white 35%), ${rate.color})`,
+                              boxShadow: `0 0 12px ${rate.color}`,
+                            }} />
+                            <div style={{ flex: 1 }}>
+                              <div className="nh-bar" style={{ "--bar-c": rate.color } as React.CSSProperties}>
+                                <i style={{ width: `${Math.min(100, (current / village.warehouseCap) * 100)}%` }} />
                               </div>
-                              <div>
-                                <h3 className="font-display text-parchment-aged">{rate.label}</h3>
-                                <p className="text-[10px] text-stone-500">{rate.silverCost} 🪙 / unidad</p>
+                              <div className="nh-mono" style={{ fontSize: 10, color: "var(--nh-parchment-dim)", marginTop: 4 }}>
+                                {rate.silverCost} plata / unidad
                               </div>
-                            </div>
-                            <div className="text-right">
-                              <p className="text-[10px] text-stone-500">Tienes</p>
-                              <p className="font-display text-gold-bright font-bold">{current}</p>
                             </div>
                           </div>
-                          <div className="grid grid-cols-4 gap-1">
+                          <div style={{ display: "flex", gap: 4 }}>
                             {TRADE_AMOUNTS.map(amt => {
                               const cost = rate.silverCost * amt;
                               const canBuy = village.silver >= cost;
                               return (
-                                <button
-                                  key={amt}
-                                  onClick={() => doAction("TRADE", { resource, amount: amt })}
+                                <button key={amt} className="nh-btn" style={{ flex: 1, padding: "6px 0" }}
                                   disabled={!canBuy}
-                                  className={`text-[10px] py-1 rounded border font-display transition-all ${
-                                    canBuy
-                                      ? "border-amber-700/50 text-amber-200 bg-amber-950/30 hover:bg-amber-900/50"
-                                      : "border-stone-800/40 text-stone-600 bg-stone-950/30 cursor-not-allowed"
-                                  }`}
-                                >
+                                  onClick={() => doAction("TRADE", { resource, amount: amt })}>
                                   +{amt}
-                                  <span className="block text-[9px] text-stone-500">{cost}🪙</span>
                                 </button>
                               );
                             })}
