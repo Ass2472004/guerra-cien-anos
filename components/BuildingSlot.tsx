@@ -1,6 +1,7 @@
 "use client";
 import { BUILDING_ICONS, BUILDING_COLORS } from "@/lib/game/constants/buildingIcons";
 import { BUILDINGS } from "@/lib/game/constants/buildings";
+import { BuildingIllustration } from "./BuildingIllustration";
 
 export function BuildingSlot({
   type, level, inProgress, onClick, size = 64,
@@ -15,35 +16,40 @@ export function BuildingSlot({
   const icon = BUILDING_ICONS[type] ?? "🏗";
   const color = BUILDING_COLORS[type] ?? BUILDING_COLORS.MAIN_HALL;
   const isEmpty = level === 0;
+  const innerSize = Math.floor(size * 0.85);
 
   return (
     <button
       onClick={onClick}
-      className="group relative flex flex-col items-center gap-1 transition-transform hover:scale-105"
+      className="group relative flex flex-col items-center gap-1 transition-all hover:scale-110 active:scale-95"
       title={def?.name ?? type}
     >
       <div
-        className="relative rounded-full flex items-center justify-center"
+        className="relative rounded-full flex items-center justify-center transition-all group-hover:brightness-125"
         style={{
           width: size, height: size,
           background: isEmpty
-            ? "radial-gradient(circle, rgba(110,80,40,0.25) 0%, rgba(40,28,15,0.4) 70%)"
-            : `radial-gradient(circle at 30% 30%, ${color.ring}33, transparent 60%), linear-gradient(135deg, #2a1a0c, #150d05)`,
-          border: `2px solid ${isEmpty ? "rgba(139,90,43,0.4)" : color.ring}`,
+            ? "radial-gradient(circle, rgba(110,80,40,0.18) 0%, rgba(40,28,15,0.35) 70%)"
+            : `radial-gradient(circle at 30% 30%, ${color.ring}55, transparent 60%), linear-gradient(135deg, #3a2818 0%, #150d05 100%)`,
+          border: `2px solid ${isEmpty ? "rgba(139,90,43,0.35)" : color.ring}`,
           boxShadow: isEmpty
             ? "inset 0 -4px 8px rgba(0,0,0,0.4)"
-            : `0 0 12px ${color.ring}55, inset 0 -6px 12px rgba(0,0,0,0.5), inset 0 2px 4px rgba(255,255,255,0.1)`,
+            : `0 0 16px ${color.ring}66, inset 0 -6px 12px rgba(0,0,0,0.6), inset 0 2px 4px rgba(255,255,255,0.12)`,
         }}
       >
-        <span
-          className="text-2xl"
+        <div
           style={{
-            filter: isEmpty ? "grayscale(1) brightness(0.4)" : "drop-shadow(0 2px 4px rgba(0,0,0,0.8))",
-            opacity: isEmpty ? 0.4 : 1,
+            filter: isEmpty ? "grayscale(1) brightness(0.35)" : undefined,
+            opacity: isEmpty ? 0.35 : 1,
+            transition: "all 0.2s",
           }}
         >
-          {icon}
-        </span>
+          {isEmpty ? (
+            <span style={{ fontSize: size * 0.35 }}>{icon}</span>
+          ) : (
+            <BuildingIllustration type={type} size={innerSize} />
+          )}
+        </div>
 
         {/* Level badge */}
         {level > 0 && !inProgress && (

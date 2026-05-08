@@ -293,10 +293,10 @@ export default function VillagePage({ params }: { params: Promise<{ id: string; 
 
         {/* ╔═══ VISTA — visual village layout ════════════════════╗ */}
         {tab === "VIEW" && (
-          <div className="p-4 flex flex-col lg:flex-row gap-4 max-w-7xl mx-auto">
+          <div className="p-4 flex flex-col lg:flex-row gap-4 max-w-7xl mx-auto fade-up">
 
             {/* Visual village canvas */}
-            <div className="flex-1 trav-panel overflow-hidden relative" style={{ minHeight: 460 }}>
+            <div className="flex-1 trav-panel overflow-hidden relative" style={{ minHeight: 540 }}>
               <div className="trav-panel-header">
                 <span>🏘 Plano de la aldea</span>
                 <span className="text-stone-500 text-[10px]">
@@ -304,44 +304,48 @@ export default function VillagePage({ params }: { params: Promise<{ id: string; 
                 </span>
               </div>
 
-              {/* Background landscape */}
-              <div
-                className="absolute inset-x-0 top-8 bottom-0 pointer-events-none"
-                style={{
-                  background: `
-                    radial-gradient(ellipse at center, rgba(58,40,24,0.4) 0%, transparent 70%),
-                    radial-gradient(circle at 50% 60%, rgba(184,134,47,0.08) 0%, transparent 50%)
-                  `,
-                }}
-              />
+              {/* Scenic background */}
+              <div className="village-scene" style={{ top: "32px" }} />
+              <div className="embers" style={{ top: "32px" }} />
 
-              {/* Center: Main Hall */}
+              {/* Center: Main Hall (with rotating ring) */}
               {mainHall && (
-                <div className="relative pt-10 pb-4 flex flex-col items-center">
+                <div className="relative pt-12 pb-6 flex flex-col items-center z-10">
                   <div className="hero-frame">
                     <BuildingSlot
                       type={mainHall.key}
                       level={getBuildingState(mainHall.key).level}
                       inProgress={!!getBuildingState(mainHall.key).inQueue}
                       onClick={() => { setSelectedBuilding(mainHall.key); setTab("BUILDINGS"); }}
-                      size={96}
+                      size={110}
                     />
                   </div>
                 </div>
               )}
 
+              {/* Decorative divider with crown */}
+              <div className="relative z-10 flex justify-center mb-3">
+                <span className="text-gold-bright text-xs px-3" style={{
+                  background: "linear-gradient(90deg, transparent, rgba(184,134,47,0.15), transparent)",
+                }}>❖ ❖ ❖</span>
+              </div>
+
               {/* Inner ring of buildings */}
-              <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-5 gap-3 px-4 pb-4 relative z-10">
-                {otherBuildings.map(def => {
+              <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-5 gap-4 px-6 pb-6 relative z-10">
+                {otherBuildings.map((def, i) => {
                   const st = getBuildingState(def.key);
                   return (
-                    <div key={def.key} className="flex justify-center">
+                    <div
+                      key={def.key}
+                      className="flex justify-center fade-up"
+                      style={{ animationDelay: `${i * 40}ms` }}
+                    >
                       <BuildingSlot
                         type={def.key}
                         level={st.level}
                         inProgress={!!st.inQueue}
                         onClick={() => { setSelectedBuilding(def.key); setTab("BUILDINGS"); }}
-                        size={64}
+                        size={68}
                       />
                     </div>
                   );

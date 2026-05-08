@@ -62,8 +62,22 @@ export function TroopPortrait({
 }
 
 // ──────────────────────────────────────────────────────────────────────
-// HeroPortrait — retrato grande de héroe con marco dorado decorativo
+// HeroPortrait — retrato grande de héroe con avatar real (Dicebear)
 // ──────────────────────────────────────────────────────────────────────
+
+// Map faction → seed name and background hex color for Dicebear avatar
+function avatarUrl(faction: string, name?: string) {
+  const seed =
+    name ??
+    (faction === "PORTADORES" ? "Fritz" : faction === "IMPERIO" ? "Shirin" : "Almenth");
+  const bg =
+    faction === "PORTADORES" ? "4a1a3a" :
+    faction === "IMPERIO" ? "b8862f" :
+    "0e7490";
+  // Dicebear "adventurer" — cool fantasy character avatars
+  return `https://api.dicebear.com/9.x/adventurer/svg?seed=${encodeURIComponent(seed)}&backgroundColor=${bg}&radius=50`;
+}
+
 export function HeroPortrait({
   faction, name, level, hp, maxHp, size = "lg", isAlive = true, isOnAdventure = false,
 }: {
@@ -78,9 +92,7 @@ export function HeroPortrait({
 }) {
   const fac = FACTION_VISUALS[faction] ?? FACTION_VISUALS.PORTADORES;
   const px = SIZE_PX[size];
-
-  // Hero glyph by faction
-  const glyph = faction === "PORTADORES" ? "🗡" : faction === "IMPERIO" ? "🐉" : "⚓";
+  const url = avatarUrl(faction, name);
 
   return (
     <div className="flex items-center gap-3">
@@ -95,17 +107,20 @@ export function HeroPortrait({
           }}
         >
           <div
-            className="rounded-full flex items-center justify-center w-full h-full"
+            className="rounded-full overflow-hidden w-full h-full bg-stone-900"
             style={{
-              background: fac.gradient,
               border: "2px solid rgba(0,0,0,0.4)",
               boxShadow: "inset 0 -8px 16px rgba(0,0,0,0.6), inset 0 4px 8px rgba(255,255,255,0.08)",
               filter: !isAlive ? "grayscale(1) brightness(0.5)" : isOnAdventure ? "brightness(0.85)" : "none",
             }}
           >
-            <span className={`${SIZE_FONT[size]} drop-shadow-lg`} style={{ filter: "drop-shadow(0 2px 4px rgba(0,0,0,0.9))" }}>
-              {glyph}
-            </span>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={url}
+              alt={name ?? `Héroe ${faction}`}
+              className="w-full h-full object-cover"
+              loading="lazy"
+            />
           </div>
         </div>
 
