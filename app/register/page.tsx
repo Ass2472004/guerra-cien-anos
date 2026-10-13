@@ -31,30 +31,31 @@ export default function RegisterPage() {
   }
 
   return (
-    <main className="min-h-screen flex items-center justify-center px-4 py-12">
-      <div className="parchment w-full max-w-sm p-8 space-y-6">
+    <main className="auth-shell">
+      <Link href="/" className="absolute top-5 left-6 font-display title-gold tracking-widest no-underline">NAHKOR</Link>
+      <div className="auth-card mt-10 space-y-6">
         <div className="text-center space-y-2">
-          <div className="text-4xl">📜</div>
+          <div className="auth-seal" aria-hidden>📜</div>
           <h1 className="font-display text-2xl text-ink">Crear crónica</h1>
           <p className="text-ink-soft text-sm italic">Que el cronista anote tu nombre</p>
         </div>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-sm text-ink-soft mb-1 font-display">Nombre del noble</label>
-            <input type="text" value={name} onChange={e => setName(e.target.value)} className="w-full" />
+            <label>Nombre del noble</label>
+            <input type="text" value={name} onChange={e => setName(e.target.value)} />
           </div>
           <div>
-            <label className="block text-sm text-ink-soft mb-1 font-display">Correo</label>
-            <input type="email" value={email} onChange={e => setEmail(e.target.value)} className="w-full" required />
+            <label>Correo</label>
+            <input type="email" value={email} onChange={e => setEmail(e.target.value)} required />
           </div>
           <div>
-            <label className="block text-sm text-ink-soft mb-1 font-display">Contraseña</label>
+            <label>Contraseña</label>
             <div className="relative">
               <input
                 type={showPass ? "text" : "password"}
                 value={password}
                 onChange={e => setPassword(e.target.value)}
-                className="w-full pr-10"
+                className="pr-10"
                 required
                 minLength={6}
               />
@@ -79,7 +80,7 @@ export default function RegisterPage() {
             </div>
           </div>
           <div>
-            <label className="block text-sm text-ink-soft mb-1 font-display">Confirmar contraseña</label>
+            <label>Confirmar contraseña</label>
             <div className="relative">
               <input
                 type={showConfirm ? "text" : "password"}
@@ -142,7 +143,7 @@ export default function RegisterPage() {
           </label>
 
           {error && <p className="text-blood text-sm italic">{error}</p>}
-          <button type="submit" disabled={loading} className="btn-medieval w-full">
+          <button type="submit" disabled={loading} className="auth-btn">
             {loading ? "Forjando…" : "📜 Sellar el pergamino"}
           </button>
         </form>

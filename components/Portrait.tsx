@@ -118,7 +118,7 @@ export function HeroPortrait({
             <img
               src={url}
               alt={name ?? `Héroe ${faction}`}
-              className="w-full h-full object-cover"
+              className="w-full h-full object-cover text-transparent"
               loading="lazy"
             />
           </div>

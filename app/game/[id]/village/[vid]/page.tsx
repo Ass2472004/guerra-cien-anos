@@ -5,6 +5,7 @@ import { BUILDINGS } from "@/lib/game/constants/buildings";
 import { TROOPS, TROOPS_BY_FACTION } from "@/lib/game/constants/troops";
 import type { Faction } from "@/lib/game/constants/troops";
 import { BuildingSlot } from "@/components/BuildingSlot";
+import { VillageScene } from "@/components/VillageScene";
 import {
   FactionEmblem, PanelCorners, TroopIcon,
   GlyphVillage, GlyphMap, GlyphHero, GlyphNobility, GlyphBattles, GlyphEvents,
@@ -47,11 +48,11 @@ const TRADE_RATES: Record<string, { silverCost: number; label: string; color: st
 const TRADE_AMOUNTS = [50, 100, 250, 500];
 
 // Slot positions in a circle (% of container)
+// Parcelas sobre el camino circular de la escena (elipse en perspectiva 3/4)
 const SLOT_POSITIONS = (() => {
-  const r = 37;
   return Array.from({ length: 13 }, (_, i) => {
     const ang = (i / 13) * 2 * Math.PI - Math.PI / 2;
-    return { x: 50 + Math.cos(ang) * r, y: 50 + Math.sin(ang) * r };
+    return { x: 50 + Math.cos(ang) * 33, y: 62 + Math.sin(ang) * 25 };
   });
 })();
 
@@ -66,15 +67,6 @@ const RES_CONFIG = [
   { key: "silver", label: "Plata",   color: "var(--nh-r-silver)", glyph: "silver", secondary: true,  derived: false },
   { key: "gold",   label: "Oro",     color: "var(--nh-r-gold)",   glyph: "gold",   secondary: true,  derived: false },
 ] as const;
-
-// Atmosphere: pre-gen embers
-const EMBERS = Array.from({ length: 22 }, (_, i) => ({
-  id: i,
-  left: `${8 + ((i * 4.3) % 84)}%`,
-  dx: `${((i * 7 + 3) % 60) - 30}px`,
-  delay: `${(i * 0.85) % 18}s`,
-  dur: `${12 + (i * 1.1) % 14}s`,
-}));
 
 export default function VillagePage({ params }: { params: Promise<{ id: string; vid: string }> }) {
   const { id, vid } = use(params);
@@ -334,69 +326,26 @@ export default function VillagePage({ params }: { params: Promise<{ id: string; 
         {tab === "VIEW" && (
           <div style={{ display: "grid", gridTemplateColumns: "1fr 280px", gap: 10, padding: 10, height: "100%" }}>
 
-            {/* Atmospheric village plan */}
+            {/* Escena ilustrada de la aldea */}
             <div style={{
               position: "relative",
-              borderRadius: "var(--nh-radius)",
-              border: "1px solid var(--nh-bronze-dim)",
+              borderRadius: 14,
+              border: "3px solid #3b2412",
+              boxShadow: "inset 0 0 0 2px rgba(255,220,160,0.25), 0 10px 30px rgba(0,0,0,0.45)",
               overflow: "hidden",
-              minHeight: 500,
-              background: `
-                radial-gradient(ellipse at 50% 60%, rgba(80,55,35,0.55), rgba(15,9,4,0.95) 70%),
-                radial-gradient(ellipse at 30% 30%, rgba(60,90,55,0.18), transparent 50%),
-                conic-gradient(from 0deg at 50% 50%, transparent, rgba(217,168,71,0.04), transparent, rgba(217,168,71,0.04), transparent)
-              `,
+              minHeight: 600,
+              height: "calc(100vh - 130px)",
             }}>
-              {/* Fog */}
-              <div className="nh-fog" />
-              {/* Embers */}
-              <div className="nh-embers">
-                {EMBERS.map(e => (
-                  <span key={e.id} className="nh-ember" style={{
-                    left: e.left,
-                    ["--dx" as string]: e.dx,
-                    animationDelay: e.delay,
-                    animationDuration: e.dur,
-                  }} />
-                ))}
-              </div>
-
-              {/* Rotating ambient ring */}
-              <div style={{
-                position: "absolute", inset: 0,
-                animation: "nh-rotate 90s linear infinite",
-                background: "conic-gradient(from 0deg, transparent 70%, rgba(217,168,71,0.04) 80%, transparent 90%)",
-                pointerEvents: "none",
-              }} />
-
-              {/* Title */}
-              <div style={{
-                position: "absolute", top: 14, left: "50%", transform: "translateX(-50%)",
-                display: "flex", alignItems: "center", gap: 12, zIndex: 5,
-                fontFamily: "'Cinzel', serif", fontSize: 10, letterSpacing: "0.18em",
-                color: "var(--nh-bronze-bright)", opacity: 0.85,
-                whiteSpace: "nowrap",
-              }}>
-                <span>❖</span>
-                <span>PLANO DE ALDEA · {village.name.toUpperCase()}</span>
-                <span>❖</span>
-              </div>
-
-              {/* Compass ring (decorative) */}
-              <div style={{
-                position: "absolute", inset: "10%",
-                border: "1px dashed rgba(217,168,71,0.12)",
-                borderRadius: "50%", pointerEvents: "none",
-              }} />
+              <VillageScene name={village.name} />
 
               {/* Main Hall — center */}
-              <div style={{ position: "absolute", left: "50%", top: "50%", transform: "translate(-50%, -50%)", zIndex: 4 }}>
+              <div style={{ position: "absolute", left: "50%", top: "58%", transform: "translate(-50%, -78%)", zIndex: 58 }}>
                 <BuildingSlot
                   type="MAIN_HALL"
                   level={getBuildingState("MAIN_HALL").level}
                   inProgress={!!getBuildingState("MAIN_HALL").inQueue}
                   onClick={() => { setSelectedBuilding("MAIN_HALL"); setTab("BUILDINGS"); }}
-                  size={110}
+                  size={185}
                   selected={selectedBuilding === "MAIN_HALL"}
                 />
               </div>
@@ -411,9 +360,9 @@ export default function VillagePage({ params }: { params: Promise<{ id: string; 
                     style={{
                       position: "absolute",
                       left: `${pos.x}%`, top: `${pos.y}%`,
-                      transform: "translate(-50%, -50%)",
-                      animation: `nh-fadeup .5s ease ${i * 0.04}s backwards`,
-                      zIndex: 3,
+                      transform: "translate(-50%, -78%)",
+                      animation: `bslot-in .45s cubic-bezier(0.23, 1, 0.32, 1) ${i * 0.035}s backwards`,
+                      zIndex: Math.round(pos.y),
                     }}
                   >
                     <BuildingSlot
@@ -422,7 +371,7 @@ export default function VillagePage({ params }: { params: Promise<{ id: string; 
                       inProgress={!!st.inQueue}
                       queuePct={st.queuePct}
                       onClick={() => { setSelectedBuilding(def.key); setTab("BUILDINGS"); }}
-                      size={62}
+                      size={104}
                       selected={selectedBuilding === def.key}
                     />
                   </div>

@@ -77,7 +77,7 @@ export default function EventsPage({ params }: { params: Promise<{ id: string }>
 
   return (
     <div className="min-h-screen">
-      <header className="banner px-4 py-3 flex items-center gap-3">
+      <header className="dash-head px-4 py-3 flex items-center gap-3">
         <Link href={`/game/${id}`} className="text-parchment-aged hover:text-gold-bright text-sm italic">← Volver al mapa</Link>
         <span className="text-2xl">📜</span>
         <h1 className="font-display title-gold text-lg">Crónica de sucesos</h1>
@@ -86,10 +86,10 @@ export default function EventsPage({ params }: { params: Promise<{ id: string }>
 
       <div className="max-w-3xl mx-auto p-4 space-y-3">
         {events.length === 0 && (
-          <div className="parchment p-10 text-center space-y-2">
+          <div className="nh-card p-10 text-center space-y-2">
             <div className="text-5xl">📜</div>
-            <p className="font-display text-ink text-xl">La crónica está vacía</p>
-            <p className="text-ink-soft text-sm italic">Los sucesos del reino aparecerán aquí conforme avance el tiempo.</p>
+            <p className="font-display text-parchment text-xl">La crónica está vacía</p>
+            <p className="text-parchment-dark text-sm italic">Los sucesos del reino aparecerán aquí conforme avance el tiempo.</p>
           </div>
         )}
 
@@ -98,17 +98,17 @@ export default function EventsPage({ params }: { params: Promise<{ id: string }>
           const colorClass = EVENT_COLORS[ev.type] ?? "border-l-bronze bg-stone-950/20";
           const icon = EVENT_ICONS[ev.type] ?? "📜";
           return (
-            <div key={ev.id} className={`parchment p-4 border-l-4 ${colorClass} space-y-2`}>
+            <div key={ev.id} className={`nh-card p-4 border-l-4 ${colorClass} space-y-2`}>
               <div className="flex items-start justify-between gap-3">
                 <div className="flex items-center gap-2">
                   <span className="text-xl">{icon}</span>
-                  <h3 className="font-display text-ink">{ev.title}</h3>
+                  <h3 className="font-display text-parchment">{ev.title}</h3>
                 </div>
-                <span className="text-xs text-ink-soft italic whitespace-nowrap flex-shrink-0">
+                <span className="text-xs text-parchment-dark italic whitespace-nowrap flex-shrink-0">
                   {new Date(ev.createdAt).toLocaleString("es-ES", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" })}
                 </span>
               </div>
-              <p className="text-ink-soft text-sm italic leading-relaxed">{ev.description}</p>
+              <p className="text-parchment-dark text-sm italic leading-relaxed">{ev.description}</p>
               {effect && (
                 <div className="flex items-center gap-2 pt-1 border-t border-bronze/30">
                   <span className="text-xs text-parchment-dark uppercase tracking-wider">Efecto:</span>

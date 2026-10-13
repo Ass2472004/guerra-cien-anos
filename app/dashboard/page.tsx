@@ -61,7 +61,7 @@ export default function DashboardPage() {
   return (
     <div className="min-h-screen">
       {/* Header */}
-      <header className="banner px-6 py-4 flex items-center justify-between border-b-2 border-bronze">
+      <header className="dash-head px-6 py-4 flex items-center justify-between">
         <div className="flex items-center gap-3">
           <span className="text-3xl">🌑</span>
           <div>
@@ -115,7 +115,7 @@ export default function DashboardPage() {
               const victoryPct = Math.min(100, (game.playerVillages / 15) * 100);
               return (
                 <Link key={game.id} href={`/game/${game.id}`}
-                  className={`block parchment-dark border-2 ${fi.bg} p-5 space-y-4 hover:brightness-110 transition-all group rounded-sm`}>
+                  className={`block parchment-dark border-2 ${fi.bg} p-5 space-y-4 camp-card hover:brightness-110 group rounded-md`}>
                   {/* Top row */}
                   <div className="flex items-start justify-between">
                     <div className="flex items-center gap-3">

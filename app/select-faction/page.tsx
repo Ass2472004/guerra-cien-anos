@@ -90,20 +90,20 @@ export default function SelectFactionPage() {
           <div className="text-6xl">🌑</div>
           <h1 className="font-display text-4xl title-gold">Mundo Nahkor</h1>
           <p className="text-parchment-aged italic text-lg">Crónicas del mundo sin luz</p>
-          <p className="text-ink-soft text-sm max-w-2xl mx-auto">
+          <p className="text-parchment-dark text-sm max-w-2xl mx-auto">
             Un mundo orbitado por cuatro lunas, donde los días de oscuridad —la Nahkor— moldean el destino de las naciones.
             Las espadas oscuras consumen almas. Los dragones dominan el cielo. El oro de las islas de Merxias compra más que la sangre.
           </p>
         </div>
 
         {/* Identidad noble */}
-        <div className="parchment p-6 max-w-2xl mx-auto">
-          <h2 className="font-display text-base text-ink mb-4 flex items-center gap-2">
+        <div className="nh-card p-6 max-w-2xl mx-auto">
+          <h2 className="font-display text-base text-parchment mb-4 flex items-center gap-2">
             <span>👑</span> Tu identidad en Nahkor
           </h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm text-ink-soft mb-1 font-display">Nombre del noble</label>
+              <label className="block text-sm text-parchment-dark mb-1 font-display">Nombre del noble</label>
               <input
                 type="text"
                 value={playerName}
@@ -112,10 +112,10 @@ export default function SelectFactionPage() {
                 className="w-full"
                 maxLength={40}
               />
-              <p className="text-[10px] text-ink-soft mt-1 italic">Así te conocerán aliados y enemigos</p>
+              <p className="text-[10px] text-parchment-dark mt-1 italic">Así te conocerán aliados y enemigos</p>
             </div>
             <div>
-              <label className="block text-sm text-ink-soft mb-1 font-display">Nombre de la Casa</label>
+              <label className="block text-sm text-parchment-dark mb-1 font-display">Nombre de la Casa</label>
               <input
                 type="text"
                 value={houseName}
@@ -124,7 +124,7 @@ export default function SelectFactionPage() {
                 className="w-full"
                 maxLength={40}
               />
-              <p className="text-[10px] text-ink-soft mt-1 italic">Tu linaje, tu legado en el mundo</p>
+              <p className="text-[10px] text-parchment-dark mt-1 italic">Tu linaje, tu legado en el mundo</p>
             </div>
           </div>
         </div>
@@ -138,15 +138,15 @@ export default function SelectFactionPage() {
               <button
                 key={f.key}
                 onClick={() => setSelected(f.key)}
-                className={`text-left transition-all ${isSelected ? `ring-4 ${f.select} scale-[1.02]` : "hover:scale-[1.01]"} parchment p-5 space-y-4 overflow-hidden border-l-4 ${f.accent}`}
+                className={`text-left transition-all ${isSelected ? `ring-4 ${f.select} scale-[1.02]` : "hover:scale-[1.01]"} nh-card p-5 space-y-4 overflow-hidden border-l-4 ${f.accent}`}
               >
                 {/* Cabecera facción */}
                 <div className="flex items-start gap-3">
                   <FactionCrest faction={f.key} size="lg" />
                   <div className="flex-1">
-                    <h2 className="font-display text-xl text-ink leading-tight">{f.name}</h2>
+                    <h2 className="font-display text-xl text-parchment leading-tight">{f.name}</h2>
                     <p className={`text-xs font-display ${f.color}`}>{f.subtitle}</p>
-                    <p className="text-[10px] italic text-ink-soft mt-0.5">«{f.motto}»</p>
+                    <p className="text-[10px] italic text-parchment-dark mt-0.5">«{f.motto}»</p>
                   </div>
                   {isSelected && (
                     <span className="text-xs bg-bronze/20 border border-bronze/40 text-bronze px-2 py-0.5 rounded-sm font-display flex-shrink-0">
@@ -157,13 +157,13 @@ export default function SelectFactionPage() {
 
                 {/* Descripción */}
                 <div className="border-t border-bronze/40 pt-3">
-                  <p className="text-sm text-ink leading-relaxed">{f.desc}</p>
+                  <p className="text-sm text-parchment leading-relaxed">{f.desc}</p>
                 </div>
 
                 {/* Fortalezas */}
                 <div className="space-y-1.5">
                   {f.strengths.map(s => (
-                    <p key={s} className="text-xs text-ink-soft flex items-start gap-1.5">
+                    <p key={s} className="text-xs text-parchment-dark flex items-start gap-1.5">
                       <span className={`${f.color} mt-0.5 flex-shrink-0`}>✦</span> {s}
                     </p>
                   ))}
@@ -173,9 +173,9 @@ export default function SelectFactionPage() {
                 <div className="border border-bronze/40 rounded p-3 flex gap-3 bg-black/20">
                   <HeroPortrait faction={f.key} size="lg" />
                   <div className="flex-1 min-w-0">
-                    <p className="font-display text-sm text-ink leading-tight">{hero.name}</p>
-                    <p className="text-[10px] italic text-ink-soft leading-tight">{hero.title}</p>
-                    <p className="text-[10px] text-ink mt-1 leading-tight line-clamp-2">{hero.abilityDesc}</p>
+                    <p className="font-display text-sm text-parchment leading-tight">{hero.name}</p>
+                    <p className="text-[10px] italic text-parchment-dark leading-tight">{hero.title}</p>
+                    <p className="text-[10px] text-parchment mt-1 leading-tight line-clamp-2">{hero.abilityDesc}</p>
                   </div>
                 </div>
               </button>
@@ -183,7 +183,7 @@ export default function SelectFactionPage() {
           })}
         </div>
 
-        {error && <p className="text-blood-bright text-center italic">{error}</p>}
+        {error && <p className="text-red-400 text-center italic">{error}</p>}
 
         {/* Botón de inicio */}
         <div className="flex justify-center">
@@ -197,7 +197,7 @@ export default function SelectFactionPage() {
         </div>
 
         {/* Lore footer */}
-        <div className="text-center text-[10px] text-ink-soft italic border-t border-bronze/20 pt-4">
+        <div className="text-center text-[10px] text-parchment-dark italic border-t border-bronze/20 pt-4">
           «Este mundo tiene decenios de miles de años. Los Catalizadores del Origen crearon todo lo que existe.
           Las espadas Nahkor son fragmentos de divinidad. Solo los puros de corazón sobreviven a la Gran Inundación.»
           <br/>— Teontélos, pasaje 4º

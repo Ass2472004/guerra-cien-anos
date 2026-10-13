@@ -55,7 +55,7 @@ function LossesBlock({ losses, label, isPlayer }: { losses: Record<string, numbe
         <p className="text-[10px] text-parchment-dark italic">Sin bajas</p>
       ) : (
         entries.map(([type, count]) => (
-          <p key={type} className="text-xs text-blood-bright flex items-center gap-1">
+          <p key={type} className="text-xs text-red-400 flex items-center gap-1">
             <span>−{count}</span>
             <span className="text-parchment-aged">{TROOPS[type]?.name ?? type}</span>
           </p>
@@ -85,14 +85,14 @@ export default function BattlesPage({ params }: { params: Promise<{ id: string }
 
   return (
     <div className="min-h-screen">
-      <header className="banner px-4 py-3 flex items-center gap-3 flex-wrap">
+      <header className="dash-head px-4 py-3 flex items-center gap-3 flex-wrap">
         <Link href={`/game/${id}`} className="text-parchment-aged hover:text-gold-bright text-sm italic">← Volver al mapa</Link>
         <span className="text-2xl">📜</span>
         <h1 className="font-display title-gold text-lg">Crónicas de batalla</h1>
         {battles.length > 0 && (
           <div className="ml-auto flex gap-4 text-sm">
             <span className="text-emerald-400 font-display">🏆 {wins} victorias</span>
-            <span className="text-blood-bright font-display">💀 {losses} derrotas</span>
+            <span className="text-red-400 font-display">💀 {losses} derrotas</span>
           </div>
         )}
       </header>
@@ -113,10 +113,10 @@ export default function BattlesPage({ params }: { params: Promise<{ id: string }
 
       <div className="max-w-4xl mx-auto p-4 space-y-3">
         {battles.length === 0 && (
-          <div className="parchment p-10 text-center space-y-3">
+          <div className="nh-card p-10 text-center space-y-3">
             <div className="text-5xl">⚔</div>
-            <p className="font-display text-ink text-xl">Ninguna batalla registrada</p>
-            <p className="text-ink-soft text-sm italic">Mueve tus huestes contra enemigos y el cronista anotará cada choque de acero.</p>
+            <p className="font-display text-parchment text-xl">Ninguna batalla registrada</p>
+            <p className="text-parchment-dark text-sm italic">Mueve tus huestes contra enemigos y el cronista anotará cada choque de acero.</p>
           </div>
         )}
 
@@ -130,7 +130,7 @@ export default function BattlesPage({ params }: { params: Promise<{ id: string }
           return (
             <div
               key={b.id}
-              className={`parchment overflow-hidden border-l-8 ${playerWon ? "border-l-emerald-700" : "border-l-blood"}`}
+              className={`nh-card overflow-hidden border-l-2 ${playerWon ? "border-l-emerald-700" : "border-l-blood"}`}
             >
               {/* Header row — always visible */}
               <button
@@ -141,11 +141,11 @@ export default function BattlesPage({ params }: { params: Promise<{ id: string }
                   <div className="flex items-center gap-3">
                     <span className="text-2xl">{playerWon ? "🏆" : "💀"}</span>
                     <div>
-                      <p className="font-display text-ink text-sm">
+                      <p className="font-display text-parchment text-sm">
                         {playerWon ? "Victoria" : "Derrota"}
                         {r.villageName && <span className="text-bronze"> — {r.villageName}</span>}
                       </p>
-                      <p className="text-[10px] text-ink-soft">
+                      <p className="text-[10px] text-parchment-dark">
                         Casilla ({r.tileX},{r.tileY}) · {r.isAttackerPlayer ? "Atacaste" : "Fuiste atacado"}
                       </p>
                     </div>
@@ -155,7 +155,7 @@ export default function BattlesPage({ params }: { params: Promise<{ id: string }
                       <span className="text-xs text-gold-bright font-display border border-gold/40 px-2 py-0.5 rounded-sm">⚔ Conquistada</span>
                     )}
                     <div className="text-right">
-                      <p className="text-[10px] text-ink-soft">{new Date(b.createdAt).toLocaleDateString("es-ES", { day: "2-digit", month: "short" })}</p>
+                      <p className="text-[10px] text-parchment-dark">{new Date(b.createdAt).toLocaleDateString("es-ES", { day: "2-digit", month: "short" })}</p>
                       <p className="text-[10px] text-parchment-dark">
                         {totalAttackerLosses + totalDefenderLosses > 0 ? `${totalAttackerLosses + totalDefenderLosses} bajas totales` : "Sin bajas"}
                       </p>
@@ -185,7 +185,7 @@ export default function BattlesPage({ params }: { params: Promise<{ id: string }
                       isPlayer={!r.isAttackerPlayer}
                     />
                   </div>
-                  <blockquote className="text-xs text-ink-soft italic border-l-2 border-bronze pl-3 py-1">
+                  <blockquote className="text-xs text-parchment-dark italic border-l-2 border-bronze pl-3 py-1">
                     «{r.report}»
                   </blockquote>
                 </div>

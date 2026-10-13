@@ -21,24 +21,25 @@ export default function LoginPage() {
   }
 
   return (
-    <main className="min-h-screen flex items-center justify-center px-4 py-12">
-      <div className="parchment w-full max-w-sm p-8 space-y-6">
+    <main className="auth-shell">
+      <Link href="/" className="absolute top-5 left-6 font-display title-gold tracking-widest no-underline">NAHKOR</Link>
+      <div className="auth-card mt-10 space-y-6">
         <div className="text-center space-y-2">
-          <div className="text-4xl">⚜</div>
+          <div className="auth-seal" aria-hidden>⚜</div>
           <h1 className="font-display text-2xl text-ink">Acceso al castillo</h1>
           <p className="text-ink-soft text-sm italic">Identifícate, noble caballero</p>
         </div>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-sm text-ink-soft mb-1 font-display">Correo</label>
-            <input type="email" value={email} onChange={e => setEmail(e.target.value)} className="w-full" required />
+            <label>Correo</label>
+            <input type="email" value={email} onChange={e => setEmail(e.target.value)} required />
           </div>
           <div>
-            <label className="block text-sm text-ink-soft mb-1 font-display">Contraseña</label>
-            <input type="password" value={password} onChange={e => setPassword(e.target.value)} className="w-full" required />
+            <label>Contraseña</label>
+            <input type="password" value={password} onChange={e => setPassword(e.target.value)} required />
           </div>
           {error && <p className="text-blood text-sm italic">{error}</p>}
-          <button type="submit" disabled={loading} className="btn-medieval w-full">
+          <button type="submit" disabled={loading} className="auth-btn">
             {loading ? "Entrando…" : "⚔ Entrar"}
           </button>
         </form>

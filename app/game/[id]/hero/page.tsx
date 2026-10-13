@@ -98,7 +98,7 @@ export default function HeroPage({ params }: { params: Promise<{ id: string }> }
         <>
           <div className="text-5xl">⚠</div>
           <p className="title-gold font-display text-2xl">No se puede convocar al héroe</p>
-          <p className="text-blood-bright text-sm font-mono bg-stone-900/60 px-3 py-2 rounded border border-bronze/40 max-w-lg text-center">{loadError}</p>
+          <p className="text-red-400 text-sm font-mono bg-stone-900/60 px-3 py-2 rounded border border-bronze/40 max-w-lg text-center">{loadError}</p>
           <div className="flex gap-3">
             <button onClick={load} className="btn-medieval text-sm">↻ Reintentar</button>
             <Link href={`/game/${id}`} className="btn-blood text-sm">← Volver al mapa</Link>
@@ -120,20 +120,20 @@ export default function HeroPage({ params }: { params: Promise<{ id: string }> }
 
   return (
     <div className="min-h-screen">
-      <header className="banner px-4 py-3 flex items-center gap-3">
+      <header className="dash-head px-4 py-3 flex items-center gap-3">
         <Link href={`/game/${id}`} className="text-parchment-aged hover:text-gold-bright text-sm italic">← Volver al mapa</Link>
         <span className="text-2xl">⚔</span>
         <h1 className="font-display title-gold text-lg">{def.name}</h1>
         <span className="text-xs italic text-parchment-aged">{def.title}</span>
         {msg && (
-          <p className={`ml-auto text-sm italic font-display ${msg.ok ? "text-gold-bright" : "text-blood-bright"}`}>{msg.text}</p>
+          <p className={`ml-auto text-sm italic font-display ${msg.ok ? "text-gold-bright" : "text-red-400"}`}>{msg.text}</p>
         )}
       </header>
 
       <div className="max-w-4xl mx-auto p-4 space-y-4">
 
         {/* Hero card */}
-        <div className="parchment p-5 flex gap-5">
+        <div className="nh-card p-5 flex gap-5">
           <div className="flex-shrink-0">
             <HeroPortrait
               faction={hero.faction}
@@ -146,10 +146,10 @@ export default function HeroPage({ params }: { params: Promise<{ id: string }> }
             />
           </div>
           <div className="flex-1 space-y-3">
-            <p className="text-ink-soft italic text-sm leading-relaxed">«{heroLore}»</p>
-            <div className="border-2 border-bronze p-3 bg-amber-100/40 rounded-sm">
-              <p className="text-ink font-display text-sm">⚜ {(def.ability || "Habilidad").replace(/_/g, " ")}</p>
-              <p className="text-ink-soft text-sm mt-1">{def.abilityDesc || "—"}</p>
+            <p className="text-parchment-dark italic text-sm leading-relaxed">«{heroLore}»</p>
+            <div className="border border-gold/50 p-3 bg-amber-500/10 rounded">
+              <p className="text-gold-bright font-display text-sm">⚜ {(def.ability || "Habilidad").replace(/_/g, " ")}</p>
+              <p className="text-parchment-dark text-sm mt-1">{def.abilityDesc || "—"}</p>
             </div>
           </div>
         </div>
@@ -157,7 +157,7 @@ export default function HeroPage({ params }: { params: Promise<{ id: string }> }
         {/* Stats */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           {/* Level */}
-          <div className="parchment-dark p-3 rounded border border-bronze/40 space-y-1">
+          <div className="nh-card p-3 rounded border border-bronze/40 space-y-1">
             <p className="text-[10px] text-parchment-aged uppercase tracking-wider">Nivel</p>
             <p className="text-3xl font-display text-gold-bright">{hero.level}</p>
             <div className="w-full bg-stone-900 rounded-full h-1.5 border border-bronze/30 overflow-hidden">
@@ -166,32 +166,32 @@ export default function HeroPage({ params }: { params: Promise<{ id: string }> }
             <p className="text-[10px] text-parchment-dark">{hero.xp} / {hero.xpNext} XP</p>
           </div>
           {/* HP */}
-          <div className="parchment-dark p-3 rounded border border-bronze/40 space-y-1">
+          <div className="nh-card p-3 rounded border border-bronze/40 space-y-1">
             <p className="text-[10px] text-parchment-aged uppercase tracking-wider">Vida</p>
-            <p className="text-3xl font-display text-blood-bright">{hero.hp}/{hero.maxHp}</p>
-            {!hero.isAlive && <p className="text-[10px] text-blood-bright italic">💀 Reviviendo… {timeLeft(hero.revivesAt)}</p>}
+            <p className="text-3xl font-display text-red-400">{hero.hp}/{hero.maxHp}</p>
+            {!hero.isAlive && <p className="text-[10px] text-red-400 italic">💀 Reviviendo… {timeLeft(hero.revivesAt)}</p>}
           </div>
           {/* Strength */}
-          <div className="parchment-dark p-3 rounded border border-bronze/40 space-y-1">
+          <div className="nh-card p-3 rounded border border-bronze/40 space-y-1">
             <p className="text-[10px] text-parchment-aged uppercase tracking-wider">Fuerza</p>
             <p className="text-3xl font-display text-orange-300">{hero.fightingStrength}</p>
           </div>
           {/* Skill points */}
-          <div className="parchment-dark p-3 rounded border border-bronze/40 space-y-1">
+          <div className="nh-card p-3 rounded border border-bronze/40 space-y-1">
             <p className="text-[10px] text-parchment-aged uppercase tracking-wider">Puntos libres</p>
             <p className="text-3xl font-display text-gold-pale">{hero.skillPoints}</p>
           </div>
         </div>
 
         {/* Bonuses bar */}
-        <div className="parchment p-4 grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <div className="nh-card p-4 grid grid-cols-2 sm:grid-cols-4 gap-3">
           {(["fightingStrength", "attackBonus", "defenseBonus", "resourceBonus"] as const).map(k => {
             const s = STAT_LABELS[k];
             return (
               <div key={k} className="text-center">
                 <p className="text-xl">{s.icon}</p>
                 <p className={`font-display text-lg font-bold ${s.color}`}>{(hero as any)[k]}{k !== "fightingStrength" ? "%" : ""}</p>
-                <p className="text-[10px] text-ink-soft">{s.label}</p>
+                <p className="text-[10px] text-parchment-dark">{s.label}</p>
               </div>
             );
           })}
@@ -199,8 +199,8 @@ export default function HeroPage({ params }: { params: Promise<{ id: string }> }
 
         {/* Skill point allocation */}
         {hero.skillPoints > 0 && (
-          <div className="parchment p-4 space-y-3">
-            <h2 className="font-display text-ink flex items-center gap-2">
+          <div className="nh-card p-4 space-y-3">
+            <h2 className="font-display text-parchment flex items-center gap-2">
               📜 Distribuir puntos
               <span className="text-gold-bright font-display">({hero.skillPoints - totalAllocated} restantes)</span>
             </h2>
@@ -208,7 +208,7 @@ export default function HeroPage({ params }: { params: Promise<{ id: string }> }
               {(["fightingStrength", "attackBonus", "defenseBonus", "resourceBonus"] as const).map(k => {
                 const s = STAT_LABELS[k];
                 return (
-                  <div key={k} className="flex items-center gap-3 parchment-dark p-2.5 rounded border border-bronze/30">
+                  <div key={k} className="flex items-center gap-3 nh-card p-2.5 rounded border border-bronze/30">
                     <span className="text-lg">{s.icon}</span>
                     <span className={`flex-1 text-sm ${s.color}`}>{s.label}</span>
                     <button onClick={() => setAllocation(a => ({ ...a, [k]: Math.max(0, a[k] - 1) }))}
@@ -233,7 +233,7 @@ export default function HeroPage({ params }: { params: Promise<{ id: string }> }
         )}
 
         {/* Equipment */}
-        <div className="parchment-dark p-4 space-y-3">
+        <div className="nh-card p-4 space-y-3">
           <h2 className="font-display text-gold-bright">⚔ Equipamiento del héroe</h2>
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
             {SLOTS.map(slot => {
@@ -260,14 +260,14 @@ export default function HeroPage({ params }: { params: Promise<{ id: string }> }
         </div>
 
         {/* Adventures */}
-        <div className="parchment p-4 space-y-4">
-          <h2 className="font-display text-ink">🗺 Misiones de aventura</h2>
+        <div className="nh-card p-4 space-y-4">
+          <h2 className="font-display text-parchment">🗺 Misiones de aventura</h2>
 
           {hero.isOnAdventure ? (
             <div className="space-y-3">
-              <div className="parchment-dark border border-bronze/50 p-4 rounded space-y-2">
+              <div className="nh-card border border-bronze/50 p-4 rounded space-y-2">
                 <p className="font-display text-gold-bright">En misión…</p>
-                <p className="text-ink-soft text-sm italic">Tu héroe está en campo. Regresa en:</p>
+                <p className="text-parchment-dark text-sm italic">Tu héroe está en campo. Regresa en:</p>
                 <p className="text-2xl font-display text-gold-bright">{timeLeft(hero.adventureEndsAt)}</p>
               </div>
               {adventureReady && (
@@ -278,7 +278,7 @@ export default function HeroPage({ params }: { params: Promise<{ id: string }> }
             </div>
           ) : (
             <div className="space-y-3">
-              <p className="text-ink-soft text-sm italic">Elige la misión y envía al héroe. Cada tipo ofrece recompensas distintas.</p>
+              <p className="text-parchment-dark text-sm italic">Elige la misión y envía al héroe. Cada tipo ofrece recompensas distintas.</p>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 {Object.values(adventureTypes).map(adv => {
                   const isSelected = selectedAdventure === adv.key;
@@ -293,7 +293,7 @@ export default function HeroPage({ params }: { params: Promise<{ id: string }> }
                         {adv.name}
                         <span className="text-[10px] text-parchment-dark ml-auto">{adv.durationMin} min</span>
                       </p>
-                      <p className="text-[10px] text-ink-soft mt-1">{adv.desc}</p>
+                      <p className="text-[10px] text-parchment-dark mt-1">{adv.desc}</p>
                       <div className="flex gap-3 mt-2 text-[10px]">
                         <span className="text-gold-pale">⭐ {adv.xpMin}–{adv.xpMax} XP</span>
                         {adv.itemChance > 0 && <span className="text-blue-300">🎒 {Math.round(adv.itemChance * 100)}% objeto</span>}
@@ -315,15 +315,15 @@ export default function HeroPage({ params }: { params: Promise<{ id: string }> }
         </div>
 
         {/* Army assignment */}
-        <div className="parchment p-4 space-y-2">
-          <h2 className="font-display text-ink">🛡 Hueste asignada</h2>
+        <div className="nh-card p-4 space-y-2">
+          <h2 className="font-display text-parchment">🛡 Hueste asignada</h2>
           {hero.armyId ? (
             <div className="flex items-center justify-between">
-              <p className="text-ink-soft text-sm italic">El héroe lidera el ejército {hero.armyId.slice(0, 8)}…</p>
+              <p className="text-parchment-dark text-sm italic">El héroe lidera el ejército {hero.armyId.slice(0, 8)}…</p>
               <button onClick={() => call("ASSIGN_ARMY", { armyId: null })} className="btn-blood text-xs px-3 py-1">Dejar ejército</button>
             </div>
           ) : (
-            <p className="text-ink-soft text-sm italic">El héroe espera en el castillo. Asígnalo a una hueste para aportar sus bonificaciones en combate.</p>
+            <p className="text-parchment-dark text-sm italic">El héroe espera en el castillo. Asígnalo a una hueste para aportar sus bonificaciones en combate.</p>
           )}
         </div>
       </div>

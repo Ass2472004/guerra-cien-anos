@@ -29,7 +29,7 @@ export default function NobilityPage({ params }: { params: Promise<{ id: string 
 
   return (
     <div className="min-h-screen">
-      <header className="banner px-4 py-3 flex items-center gap-3">
+      <header className="dash-head px-4 py-3 flex items-center gap-3">
         <Link href={`/game/${id}`} className="text-parchment-aged hover:text-gold-bright text-sm italic">← Volver al mapa</Link>
         <span className="text-2xl">👑</span>
         <h1 className="font-display title-gold text-lg">Nobleza y Títulos</h1>
@@ -37,7 +37,7 @@ export default function NobilityPage({ params }: { params: Promise<{ id: string 
 
       <div className="max-w-3xl mx-auto p-6 space-y-6">
         {/* Current title prominent display */}
-        <div className="parchment p-6 text-center space-y-3">
+        <div className="nh-card p-6 text-center space-y-3">
           <p className="text-sm text-parchment-aged uppercase tracking-widest font-display">Tu rango actual</p>
           <div className="text-6xl">{NOBILITY[currentTitle].icon}</div>
           <h2 className="font-display text-4xl title-gold">{NOBILITY[currentTitle].labelEs}</h2>
@@ -56,8 +56,8 @@ export default function NobilityPage({ params }: { params: Promise<{ id: string 
         </div>
 
         {/* Bonuses */}
-        <div className="parchment p-5 space-y-3">
-          <h2 className="font-display text-ink text-lg">⚜ Privilegios del rango</h2>
+        <div className="nh-card p-5 space-y-3">
+          <h2 className="font-display text-parchment text-lg">⚜ Privilegios del rango</h2>
           <div className="grid grid-cols-2 gap-3">
             {[
               { label: "Producción de recursos", value: NOBILITY[currentTitle].productionBonus, color: "text-emerald-600", icon: "🌾", unit: "%" },
@@ -66,7 +66,7 @@ export default function NobilityPage({ params }: { params: Promise<{ id: string 
               { label: "Velocidad de reclutamiento", value: NOBILITY[currentTitle].recruitBonus, color: "text-amber-700", icon: "⏩", unit: "%" },
             ].map(b => (
               <div key={b.label} className="stat-box">
-                <p className="text-xs text-ink-soft uppercase tracking-wider">{b.icon} {b.label}</p>
+                <p className="text-xs text-parchment-dark uppercase tracking-wider">{b.icon} {b.label}</p>
                 <p className={`font-display text-2xl ${b.value > 0 ? b.color : "text-parchment-dark"}`}>
                   {b.value > 0 ? `+${b.value}${b.unit}` : "—"}
                 </p>
@@ -76,7 +76,7 @@ export default function NobilityPage({ params }: { params: Promise<{ id: string 
         </div>
 
         {/* Title progression ladder */}
-        <div className="parchment-dark p-5 space-y-4">
+        <div className="nh-card p-5 space-y-4">
           <h2 className="font-display text-gold-bright text-lg">📜 Escala nobiliaria</h2>
           <div className="space-y-3">
             {NOBILITY_ORDER.map((key, idx) => {
@@ -131,9 +131,9 @@ export default function NobilityPage({ params }: { params: Promise<{ id: string 
         </div>
 
         {/* How to earn prestige */}
-        <div className="parchment p-5 space-y-2">
-          <h2 className="font-display text-ink">⭐ Cómo ganar prestigio</h2>
-          <ul className="space-y-1 text-sm text-ink-soft">
+        <div className="nh-card p-5 space-y-2">
+          <h2 className="font-display text-parchment">⭐ Cómo ganar prestigio</h2>
+          <ul className="space-y-1 text-sm text-parchment-dark">
             <li>⚔ <strong>Victoria en batalla:</strong> +80 prestigio</li>
             <li>🛡 <strong>Defender una aldea con éxito:</strong> +50 prestigio</li>
             <li>🏰 <strong>Capturar una aldea enemiga:</strong> +150 prestigio</li>

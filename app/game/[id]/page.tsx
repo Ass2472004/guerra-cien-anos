@@ -111,13 +111,28 @@ export default function GamePage({ params }: { params: Promise<{ id: string }> }
   const [moveMode, setMoveMode] = useState(false);
   const [ticking, setTicking] = useState(false);
   const [toasts, setToasts] = useState<{ id: number; msg: string; type: "info" | "warn" | "win" }[]>([]);
-  const [zoomIdx, setZoomIdx] = useState<ZoomIdx>(1);
+  const [zoomIdx, setZoomIdx] = useState<ZoomIdx>(2);
   const [clock, setClock] = useState(Date.now());
   const [spyLoading, setSpyLoading] = useState(false);
   const [tributeLoading, setTributeLoading] = useState(false);
   const toastId = useRef(0);
 
   const tileSize = ZOOM_SIZES[zoomIdx];
+
+  // Centra el mapa en tu aldea al cargar
+  const centeredRef = useRef(false);
+  useEffect(() => {
+    if (centeredRef.current || !mapData) return;
+    const home = document.querySelector<HTMLElement>('[data-home="1"]');
+    const stage = home?.closest<HTMLElement>(".nh-map-stage");
+    if (home && stage) {
+      const h = home.getBoundingClientRect();
+      const st = stage.getBoundingClientRect();
+      stage.scrollLeft += h.left - st.left - st.width / 2 + h.width / 2;
+      stage.scrollTop += h.top - st.top - st.height / 2 + h.height / 2;
+      centeredRef.current = true;
+    }
+  });
 
   const showToast = useCallback((msg: string, type: "info" | "warn" | "win" = "info") => {
     const tid = ++toastId.current;
@@ -595,10 +610,13 @@ export default function GamePage({ params }: { params: Promise<{ id: string }> }
           <div className="nh-panel mt-auto">
             <PanelCorners />
             <div className="nh-panel-header">Leyenda</div>
-            <div className="nh-panel-body grid grid-cols-2 gap-x-2 gap-y-0.5 text-[9px]"
+            <div className="nh-panel-body grid grid-cols-2 gap-x-3 gap-y-1 text-[11px] leading-tight"
               style={{ color: "var(--nh-parchment-dim)" }}>
-              {Object.entries(TILE_GLYPH).filter(([, v]) => v).map(([type, glyph]) => (
-                <span key={type}>{glyph} {TILE_LABEL[type as TileType]}</span>
+              {(["VILLAGE", "OASIS_FOREST", "MOUNTAIN", "OASIS_GRAIN", "DEPOSIT_GOLD", "RUINS", "RIVER", "PLAIN"] as TileType[]).map(type => (
+                <span key={type} className="flex items-center gap-1.5">
+                  <i className={`legend-swatch ${TILE_CLASS[type]}`} aria-hidden />
+                  {TILE_LABEL[type]}
+                </span>
               ))}
               <span style={{ color: "var(--nh-accent-bright)" }}>⚔ Tu ejército</span>
               <span style={{ color: "#ff6b6b" }}>☠ Enemigo</span>
@@ -608,23 +626,23 @@ export default function GamePage({ params }: { params: Promise<{ id: string }> }
         </aside>
 
         {/* ── MAP ─────────────────────────────────────────────────────── */}
-        <div className="flex-1 overflow-auto p-3 relative"
-          style={{ background: "var(--nh-bg)" }}>
+        <div className="flex-1 overflow-auto p-6 relative nh-map-stage">
 
           {/* Zoom controls */}
-          <div className="absolute top-4 right-4 z-20 flex flex-col gap-1">
+          <div className="absolute top-4 right-4 z-20 flex flex-col gap-2 map-zoom">
             <button
               onClick={() => setZoomIdx(Math.min(3, zoomIdx + 1) as ZoomIdx)}
-              className="nh-btn w-8 h-8 p-0 font-bold text-base"
+              className="map-zoom-btn" aria-label="Acercar"
             >+</button>
             <button
               onClick={() => setZoomIdx(Math.max(0, zoomIdx - 1) as ZoomIdx)}
-              className="nh-btn w-8 h-8 p-0 font-bold text-base"
+              className="map-zoom-btn" aria-label="Alejar"
             >−</button>
           </div>
 
+          <div className="min-h-full min-w-fit flex items-center justify-center">
           <div
-            className="inline-grid gap-px p-1 rounded-sm"
+            className="inline-grid nh-map-grid-ill"
             style={{
               gridTemplateColumns: `repeat(${mapData.width}, ${tileSize}px)`,
               background: "var(--nh-bg)",
@@ -651,7 +669,7 @@ export default function GamePage({ params }: { params: Promise<{ id: string }> }
                 const villageOwner = tile.village?.owner;
 
                 // Ownership ring via inline box-shadow (doesn't conflict with nh-tile hover)
-                const ownerStyle: React.CSSProperties = villageOwner === "PLAYER"
+                const ownerStyle: React.CSSProperties = isHidden ? {} : villageOwner === "PLAYER"
                   ? { outline: "2px solid #fbbf24", outlineOffset: "-2px" }
                   : villageOwner === "AI_RIVAL"
                   ? { outline: "2px solid #ef4444", outlineOffset: "-2px" }
@@ -662,21 +680,23 @@ export default function GamePage({ params }: { params: Promise<{ id: string }> }
                 return (
                   <button
                     key={`${x},${y}`}
+                    data-home={villageOwner === "PLAYER" ? "1" : undefined}
                     onClick={() => {
                       if (moveMode && !isHidden && tile.type !== "MOUNTAIN") moveArmy(x, y);
                       else setSelected(isHidden ? null : tile);
                     }}
                     style={{
                       width: tileSize, height: tileSize,
-                      opacity: isHidden ? 1 : isFog ? 0.3 : 1,
-                      background: isHidden ? "var(--nh-bg)" : undefined,
+                      ...(isHidden ? { backgroundSize: `${tileSize * 8}px ${tileSize * 8}px`, backgroundPosition: `${-x * tileSize}px ${-y * tileSize}px` } : {}),
                       cursor: moveMode && !isHidden && tile.type !== "MOUNTAIN"
                         ? "crosshair" : "pointer",
                       ...ownerStyle,
                     }}
                     className={[
                       "nh-tile",
-                      isHidden ? "" : TILE_CLASS[tile.type],
+                      isHidden ? "is-hidden" : TILE_CLASS[tile.type],
+                      (x * 7 + y * 13) % 3 === 0 ? "v1" : "",
+                      isFog ? "is-fog" : "",
                       isSelected ? "is-selected" : "",
                       moveMode && !isHidden && tile.type !== "MOUNTAIN"
                         ? "[&:hover]:brightness-125" : "",
@@ -687,9 +707,6 @@ export default function GamePage({ params }: { params: Promise<{ id: string }> }
                   >
                     {!isHidden && (
                       <>
-                        {tileSize >= 32 && TILE_GLYPH[tile.type] && (
-                          <div className="nh-tile-glyph">{TILE_GLYPH[tile.type]}</div>
-                        )}
                         {playerArmies.length > 0 && (
                           <div className="nh-tile-army">
                             ⚔{playerArmies.length > 1 ? playerArmies.length : ""}
@@ -712,13 +729,12 @@ export default function GamePage({ params }: { params: Promise<{ id: string }> }
                         )}
                       </>
                     )}
-                    {isHidden && (
-                      <div className="nh-tile-glyph" style={{ opacity: 0.2 }}>▓</div>
-                    )}
+
                   </button>
                 );
               })
             )}
+          </div>
           </div>
         </div>
 
